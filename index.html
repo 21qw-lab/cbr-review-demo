@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金融营销宣传智能审查模型 Demo · 消保审查</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#ffffff; --line:#e3e8f0; --ink:#1c2430; --sub:#5b6779;
+  --brand:#1a4f9c; --brand2:#2f74d0; --high:#d92b2b; --mid:#e08a00; --low:#2f8f4e;
+  --chip:#eef3fb; --shadow:0 1px 3px rgba(20,30,50,.08),0 6px 20px rgba(20,30,50,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Source Han Sans SC",system-ui,sans-serif;
+  font-size:14px;line-height:1.7}
+header.topbar{background:linear-gradient(90deg,#123a72,#1a4f9c);color:#fff;padding:12px 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header.topbar .logo{font-size:17px;font-weight:700;letter-spacing:.5px}
+header.topbar .tag{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
+  padding:2px 9px;border-radius:20px;font-size:12px}
+header.topbar .spacer{flex:1}
+button{font-family:inherit;font-size:13px;cursor:pointer;border-radius:6px;border:1px solid var(--line);
+  background:#fff;color:var(--ink);padding:6px 12px;transition:.15s}
+button:hover{border-color:var(--brand2);color:var(--brand2)}
+button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+button.primary:hover{background:var(--brand2);color:#fff}
+button.ghost{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
+button.ghost:hover{background:rgba(255,255,255,.15);color:#fff}
+button.sm{padding:3px 9px;font-size:12px}
+.topbar .cfg{font-size:12px;opacity:.85}
+
+/* 流程条 */
+.flow{background:#fff;border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:6px;
+  align-items:center;overflow-x:auto}
+.step{display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--line);
+  border-radius:20px;background:#fbfcfe;color:var(--sub);white-space:nowrap;font-size:12.5px}
+.step .n{width:19px;height:19px;border-radius:50%;background:#dfe5ee;color:#7a8699;display:flex;
+  align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.step.active{border-color:var(--brand2);background:var(--chip);color:var(--brand);font-weight:600}
+.step.active .n{background:var(--brand);color:#fff}
+.step.done{border-color:#bcd8c8;background:#f2faf5;color:#2f6f4a}
+.step.done .n{background:#2f8f4e;color:#fff}
+.arrow{color:#c3ccda;font-size:13px}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px 20px 40px;align-items:start}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);
+  margin-bottom:14px;overflow:hidden}
+.panel h3{margin:0;padding:11px 14px;font-size:14px;border-bottom:1px solid var(--line);background:#fafbfd;
+  display:flex;align-items:center;gap:8px}
+.panel h3 .tip{font-weight:400;font-size:12px;color:var(--sub)}
+.panel .body{padding:13px 14px}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:5px}
+select,input[type=text],input[type=password],textarea{width:100%;font-family:inherit;font-size:13px;
+  padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;line-height:1.65}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px rgba(47,116,208,.12)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.drop{border:1.5px dashed #c3cee0;border-radius:8px;padding:16px 12px;text-align:center;color:var(--sub);
+  background:#fbfcfe;cursor:pointer;font-size:13px}
+.drop:hover{border-color:var(--brand2);background:var(--chip);color:var(--brand)}
+.drop b{color:var(--brand)}
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+.preview{max-height:230px;overflow:auto;background:#fbfcfe;border:1px solid var(--line);border-radius:6px;
+  padding:10px;font-size:12.5px;white-space:pre-wrap;color:#33415c}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--chip);border:1px solid #d8e3f4;color:var(--brand);border-radius:20px;
+  padding:3px 10px;font-size:12px;cursor:pointer}
+.chip:hover{background:#e2ecfa}
+
+/* 结果区 */
+.summary{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);
+  background:#fafbfd}
+.stat{border:1px solid var(--line);border-radius:8px;padding:5px 12px;background:#fff;font-size:12.5px}
+.stat b{font-size:15px;margin-right:3px}
+.s-high b{color:var(--high)} .s-mid b{color:var(--mid)} .s-low b{color:var(--low)}
+.verdict{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px}
+.verdict select{width:auto;min-width:150px}
+.card{border:1px solid var(--line);border-radius:9px;background:#fff;margin:12px 14px;overflow:hidden}
+.card.edited{border-color:#f0c674}
+.card.rejected{opacity:.55}
+.card .hd{display:flex;align-items:center;gap:9px;padding:9px 12px;background:#fafbfd;border-bottom:1px solid var(--line);
+  flex-wrap:wrap}
+.badge{font-size:11.5px;font-weight:700;color:#fff;padding:2px 8px;border-radius:4px}
+.b-high{background:var(--high)} .b-mid{background:var(--mid)} .b-low{background:var(--low)}
+.ruleid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:#eef1f6;color:#41506a;
+  padding:1px 7px;border-radius:4px;border:1px solid #dde3ec}
+.rname{font-weight:600}
+.src{font-size:11.5px;color:var(--sub);border:1px solid var(--line);border-radius:20px;padding:1px 8px;background:#fff}
+.acts{margin-left:auto;display:flex;gap:6px}
+.card .bd{padding:11px 13px}
+.quote{background:#fff8f2;border-left:3px solid #e08a00;padding:7px 11px;border-radius:0 6px 6px 0;
+  font-size:13px;color:#5a4126;margin-bottom:10px;white-space:pre-wrap}
+.quote mark{background:#ffe08a;padding:0 2px;border-radius:2px}
+.sec{margin-bottom:9px}
+.sec .t{font-size:12.5px;font-weight:700;color:var(--brand);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.sec .c{font-size:13.2px;color:#2a3446;white-space:pre-wrap}
+.basis li{margin-bottom:4px;font-size:13px}
+.basis ul{margin:4px 0 0;padding-left:18px}
+.basis .law{font-weight:600;color:#33415c}
+.basis .art{color:var(--brand);font-weight:600}
+.basis .txt{color:var(--sub)}
+.tagline{font-size:11.5px;color:var(--sub);margin-top:6px}
+.state{font-size:11.5px;padding:1px 8px;border-radius:20px;border:1px solid}
+.st-ok{color:#2f6f4a;border-color:#bcd8c8;background:#f2faf5}
+.st-ed{color:#8a5a00;border-color:#f0c674;background:#fff8ec}
+.st-no{color:#8a8f99;border-color:#dfe3ec;background:#f6f7f9}
+.empty{padding:40px 20px;text-align:center;color:var(--sub)}
+.toast{position:fixed;right:18px;bottom:18px;background:#1c2430;color:#fff;padding:9px 15px;border-radius:7px;
+  font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+.toast.show{opacity:.96}
+dialog{border:none;border-radius:10px;padding:0;width:520px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(15,22,35,.45)}
+dialog .hd2{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px;background:#fafbfd}
+dialog .bd2{padding:14px 16px}
+dialog .ft2{padding:11px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#fafbfd}
+.note{font-size:12px;color:var(--sub);background:#f6f8fb;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.kv{display:grid;grid-template-columns:88px 1fr;gap:6px 10px;font-size:12.5px}
+.kv .k{color:var(--sub)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">金融营销宣传智能审查模型 <span style="font-weight:400;opacity:.8">Demo</span></div>
+  <span class="tag">消保审查</span>
+  <span class="tag" id="ruleCount">规则库 0 条</span>
+  <div class="spacer"></div>
+  <span class="cfg" id="llmState">大模型：未配置（本地规则引擎）</span>
+  <button class="ghost sm" onclick="openCfg()">模型配置</button>
+  <button class="ghost sm" onclick="exportMd()">导出报告</button>
+</header>
+
+<div class="flow" id="flow"></div>
+
+<div class="layout">
+  <!-- 左：材料区 -->
+  <div>
+    <div class="panel">
+      <h3>① 待审材料 <span class="tip">触发智能审查</span></h3>
+      <div class="body">
+        <div class="field">
+          <label>业务条线（用于条线专项规则）</label>
+          <select id="line">
+            <option value="">自动识别</option>
+            <option>理财</option><option>基金</option><option>保险</option>
+            <option>贷款</option><option>信用卡</option><option>综合</option>
+          </select>
+        </div>
+        <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+          <b>点击上传</b> 或拖拽文件到此<br>
+          <span style="font-size:12px">支持 txt / word(docx) / pdf(文字层) / 图片(含OCR)</span>
+        </div>
+        <input type="file" id="file" hidden accept=".txt,.md,.docx,.pdf,.png,.jpg,.jpeg">
+        <div class="hint">图片PDF与图片文件走浏览器端 OCR（首次加载模型约需10-20秒）。</div>
+        <div class="field" style="margin-top:10px">
+          <label>或直接粘贴 / 编辑待审文本</label>
+          <textarea id="text" rows="7" placeholder="粘贴宣传文案文本…"></textarea>
+        </div>
+        <div class="row">
+          <button class="primary" onclick="runReview()">生成审查意见</button>
+          <button onclick="loadPreset()">载入预置审查意见</button>
+          <button onclick="clearAll()">清空</button>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label>示例材料（本题测试材料）</label>
+          <div class="chips" id="samples"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>材料解析结果</h3>
+      <div class="body">
+        <div class="kv">
+          <div class="k">材料名称</div><div id="mName">—</div>
+          <div class="k">格式</div><div id="mType">—</div>
+          <div class="k">字数</div><div id="mLen">—</div>
+        </div>
+        <div class="preview" id="mPreview" style="margin-top:9px">尚未载入材料</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>规则库 <span class="tip">28条 · 七类禁止 + 条线专项</span></h3>
+      <div class="body" style="max-height:280px;overflow:auto">
+        <div id="ruleList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右：审查意见区 -->
+  <div>
+    <div class="panel">
+      <div class="summary">
+        <div class="stat s-high">高风险 <b id="cHigh">0</b></div>
+        <div class="stat s-mid">中风险 <b id="cMid">0</b></div>
+        <div class="stat s-low">低风险 <b id="cLow">0</b></div>
+        <div class="stat">合计 <b id="cAll">0</b></div>
+        <div class="verdict">
+          <span>审查结论</span>
+          <select id="verdict">
+            <option>不通过，须修改后重新提交审查</option>
+            <option>修改后通过（需按意见调整）</option>
+            <option>通过（无修改意见）</option>
+          </select>
+          <button class="sm" onclick="finish()">完结归档</button>
+        </div>
+      </div>
+      <div id="result" class="empty">尚未生成审查意见。请载入材料后点击「生成审查意见」。</div>
+    </div>
+  </div>
+</div>
+
+<dialog id="cfg">
+  <div class="hd2">大模型接入配置（可选）</div>
+  <div class="bd2">
+    <div class="note" style="margin-bottom:11px">
+      默认使用内置规则引擎（离线可用、结果可解释）。填写以下配置后，将调用大模型做语义级深度审查，
+      规则引擎结果用于校验与兜底。接口需为 OpenAI 兼容的 /chat/completions。
+    </div>
+    <div class="field"><label>API Base URL</label>
+      <input type="text" id="apiBase" placeholder="https://api.xxx.com/v1"></div>
+    <div class="field"><label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-..."></div>
+    <div class="field"><label>模型名称</label>
+      <input type="text" id="apiModel" placeholder="gpt-4o / claude-3-5-sonnet / qwen-max"></div>
+    <div class="field"><label>系统提示词（审查角色与规则约束）</label>
+      <textarea id="sysPrompt" rows="6"></textarea></div>
+  </div>
+  <div class="ft2">
+    <button onclick="clearCfg()">清除配置</button>
+    <button onclick="closeCfg()">取消</button>
+    <button class="primary" onclick="saveCfg()">保存</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RULES = {
+  "version": "1.0",
+  "updated": "2026-09-28",
+  "categories": [
+    {
+      "id": "A",
+      "name": "虚假、欺诈、隐瞒或引人误解的宣传",
+      "src": "需求（一）"
+    },
+    {
+      "id": "B",
+      "name": "引用不真实不准确数据、隐瞒限制条件、夸大过往业绩或收益",
+      "src": "需求（二）"
+    },
+    {
+      "id": "C",
+      "name": "利用监管审核/备案程序误导",
+      "src": "需求（三）"
+    },
+    {
+      "id": "D",
+      "name": "保本、无风险、保收益等保证性承诺",
+      "src": "需求（四）"
+    },
+    {
+      "id": "E",
+      "name": "“国家级”“最高级”“最佳”等极限类用语",
+      "src": "需求（五）"
+    },
+    {
+      "id": "F",
+      "name": "性别、种族、宗教信仰歧视性用语",
+      "src": "需求（六）"
+    },
+    {
+      "id": "G",
+      "name": "其他违反消保及金融营销宣传规定的内容",
+      "src": "需求（七）"
+    },
+    {
+      "id": "H",
+      "name": "条线专项规则（理财/基金/保险/贷款/信用卡）",
+      "src": "业务扩展"
+    }
+  ],
+  "rules": [
+    {
+      "id": "E-01",
+      "cat": "E",
+      "cat_name": "极限类用语",
+      "level": "高",
+      "name": "绝对化、极限类用语",
+      "type": "match",
+      "detect": "国家级|最高级|最佳|最好|最优|最强|最先进|最新技术|第一品牌|全国第一|行业第一|全网第一|顶级|至尊|极致|无敌|独一无二|最划算|最便宜|最低价|最安全",
+      "conclusion": "文中出现「{m}」，属于《广告法》第九条第（三）项禁止的“国家级”“最高级”“最佳”等绝对化用语，客观上易使金融消费者对该产品/服务的品质、收益水平形成超出实际的预期，构成引人误解的宣传。",
+      "basis": [
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第九条第（三）项",
+          "text": "广告不得使用“国家级”“最高级”“最佳”等用语。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者向消费者提供有关商品或者服务的质量、性能、用途、有效期限等信息，应当真实、全面，不得作虚假或者引人误解的宣传。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（二）项",
+          "text": "不得以欺诈或引人误解的方式对金融产品或金融服务进行营销宣传……不得使用“国家级”“最高级”“最佳”用语等违法违规内容。"
+        }
+      ],
+      "suggestion": "删除该表述，改为可验证的客观描述（如“本产品风险等级为2级（中低风险）”“近一年同类排名前10%（数据来源：××，截至××年××月××日）”）；确需使用排序类表述的，须同时标明评选机构、统计口径与截止日期。",
+      "note": "产品风险等级名称（如“中低风险”）、国家机关依法评定的称号不属于绝对化用语，可人工复核后放行。"
+    },
+    {
+      "id": "E-02",
+      "cat": "E",
+      "cat_name": "极限类用语",
+      "level": "中",
+      "name": "“唯一/独家/首家/头部/第一”等需有依据的排序类表述",
+      "type": "match",
+      "detect": "唯一|独家|首家|首个|首创|第一|头部|领先|遥遥领先|冠军|王牌",
+      "conclusion": "文中出现「{m}」，属于与“国家级”“最高级”“最佳”含义相近的排序/排他性表述。若无真实、准确、可核查的依据，构成引人误解的宣传；即使有依据，也需标明出处与统计口径。",
+      "basis": [
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第九条第（三）项",
+          "text": "广告不得使用“国家级”“最高级”“最佳”等用语。"
+        },
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第四条",
+          "text": "广告不得含有虚假或者引人误解的内容，不得欺骗、误导消费者。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十二条",
+          "text": "银行、支付机构应当对营销宣传内容的真实性负责。"
+        }
+      ],
+      "suggestion": "补充依据与口径（如“四大行境内代销机构中，截至××年××月××日仅我行代销”），无法提供客观证据的删除该表述。",
+      "note": "“首家/首个”若用于描述客观事实且有据可查，可保留但需标注时间与来源。"
+    },
+    {
+      "id": "E-03",
+      "cat": "E",
+      "cat_name": "极限类用语",
+      "level": "高",
+      "name": "权益/服务承诺绝对化（无限、无上限、终身免费等）",
+      "type": "match",
+      "detect": "无限次|无限期|无上限|无限|终身免费|永久免费|全部免费|零门槛|无条件",
+      "conclusion": "文中出现「{m}」，对权益、服务作出无限制承诺。该类表述若无合同依据或实际存在使用条件限制（次数、对象、地域、有效期等），属于虚假、引人误解的宣传。",
+      "basis": [
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第九条第（三）项",
+          "text": "广告不得使用“国家级”“最高级”“最佳”等用语。"
+        },
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第二十八条",
+          "text": "广告以虚假或者引人误解的内容欺骗、误导消费者的，构成虚假广告。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "改为可核验的量化表述，如“每年可享××次贵宾厅服务（具体以《产品权益手册》为准，权益有效期至××年××月××日）”，并同步列明除外情形。"
+    },
+    {
+      "id": "D-01",
+      "cat": "D",
+      "cat_name": "保本保收益承诺",
+      "level": "高",
+      "name": "明示或暗示保本、无风险、保收益",
+      "type": "match",
+      "detect": "保本|保息|保收益|保证收益|承诺收益|承诺回报|无风险|零风险|零亏损|稳赚|稳赢|旱涝保收|本金有保障|资产有保障|本金安全|不会亏损|100%有收益|百分之百.{0,4}收益|必赚|坐享财富增长|安心享受成长|尽享牛市|有保障|只赚不赔",
+      "conclusion": "文中出现「{m}」，对非保本投资型金融产品作出保本、无风险或保收益的明示/暗示性承诺，直接违反金融营销宣传禁止性规定，是本类材料中风险等级最高的问题。",
+      "basis": [
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第二十五条第（一）项",
+          "text": "招商等有投资回报预期的商品或者服务广告，应当对可能存在的风险以及风险责任承担有合理提示或者警示，不得对未来效果、收益或者与其相关的情况作出保证性承诺，明示或者暗示保本、无风险或者保收益等。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（二）项",
+          "text": "不得对资产管理产品未来效果、收益或相关情况作出保证性承诺，明示或暗示保本、无风险或保收益。"
+        },
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（九）项",
+          "text": "不得为理财产品提供直接或间接、显性或隐性担保，包括部分或全部承诺本金或收益保障。"
+        },
+        {
+          "law": "《商业银行理财业务监督管理办法》",
+          "article": "第二十六条",
+          "text": "商业银行销售理财产品，应当加强投资者适当性管理，向投资者充分披露信息和揭示风险，不得宣传或承诺保本保收益，不得误导投资者购买与其风险承受能力不相匹配的理财产品。"
+        }
+      ],
+      "suggestion": "删除该表述，并替换为风险揭示语，如“本产品为非保本浮动收益型产品，不保证本金和收益，投资者可能因市场波动产生本金损失”。如确指存款，应说明“受《存款保险条例》保护，最高偿付限额50万元”并区分于理财产品。",
+      "note": "存款类产品表述“保本保息”本身不必然违规，但需与理财产品严格区分，不得混同。"
+    },
+    {
+      "id": "D-02",
+      "cat": "D",
+      "cat_name": "保本保收益承诺",
+      "level": "高",
+      "name": "宣传“预期收益率”或固定收益承诺",
+      "type": "match",
+      "detect": "预期收益率|预期收益|承诺年化|保证年化|固定回报|固定收益.{0,4}承诺|测算年化.{0,6}%|折算年化收益率",
+      "conclusion": "文中出现「{m}」，属于出具、宣传理财产品预期收益率或对收益作出确定性暗示，违反理财产品宣传销售文本管理规定。",
+      "basis": [
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（二）项",
+          "text": "不得虚假宣传、片面或者不当宣传，夸大过往业绩，预测理财产品的投资业绩，或者出具、宣传理财产品预期收益率。"
+        },
+        {
+          "law": "《商业银行理财业务监督管理办法》",
+          "article": "第二十六条",
+          "text": "商业银行发行理财产品，不得宣传理财产品预期收益率。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（二）项",
+          "text": "不得对资产管理产品未来效果、收益或相关情况作出保证性承诺。"
+        }
+      ],
+      "suggestion": "删除“预期收益率”，改用“业绩比较基准”，并说明选择原因、测算依据或计算方法，同时标明“业绩比较基准不等于实际收益”。"
+    },
+    {
+      "id": "B-01",
+      "cat": "B",
+      "cat_name": "数据与业绩夸大",
+      "level": "高",
+      "name": "展示过往业绩/收益数据但未同步醒目提示风险",
+      "type": "missing",
+      "trigger": "成立以来年化收益率|近一年涨幅|历史业绩|累计收益|年化收益率|近[一三六]?年.{0,4}收益|涨幅\\d|收益\\d+(\\.\\d+)?%|同类排名",
+      "required": "过往业绩不代表|不代表其未来表现|不预示其未来|过往业绩不预示|投资须谨慎|投资需谨慎|不等于.{0,6}实际收益",
+      "conclusion": "材料展示过往业绩/收益数据（触发词：{m}），但未在显著位置同步提示“理财产品过往业绩不代表其未来表现，不等于理财产品实际收益，投资须谨慎”，损害金融消费者知情权，构成片面宣传。",
+      "basis": [
+        {
+          "law": "《商业银行理财业务监督管理办法》",
+          "article": "第二十六条",
+          "text": "在理财产品宣传销售文本中只能登载该理财产品或者本行同类理财产品的过往平均业绩和最好、最差业绩，并以醒目文字提醒投资者“理财产品过往业绩不代表其未来表现，不等于理财产品实际收益，投资须谨慎”。"
+        },
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（二）项",
+          "text": "不得虚假宣传、片面或者不当宣传，夸大过往业绩，预测理财产品的投资业绩。"
+        },
+        {
+          "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》",
+          "article": "第十五条第（五）项",
+          "text": "不得夸大或者片面宣传基金管理人、基金经理或者其管理的基金的过往业绩。"
+        }
+      ],
+      "suggestion": "在同一视觉区域（同一版面、字号不小于正文、颜色醒目）补充风险提示语；同时补充业绩统计区间、数据来源，并避免仅选取有利时段展示。"
+    },
+    {
+      "id": "B-02",
+      "cat": "B",
+      "cat_name": "数据与业绩夸大",
+      "level": "中",
+      "name": "业绩比较基准未说明选择原因、测算依据或计算方法",
+      "type": "missing",
+      "trigger": "业绩比较基准|业绩基准|基准收益率",
+      "required": "测算依据|计算方法|选择原因|测算方法",
+      "conclusion": "材料展示业绩比较基准（触发词：{m}），但未说明选择原因、测算依据或计算方法，亦未说明该基准与实际收益的关系，易被金融消费者误认为收益承诺。",
+      "basis": [
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（三）项",
+          "text": "不得使用未说明选择原因、测算依据或计算方法的业绩比较基准，单独或突出使用绝对数值、区间数值展示业绩比较基准。"
+        }
+      ],
+      "suggestion": "补充“本产品业绩比较基准由管理人依据××策略、××市场假设测算，不代表收益承诺，不构成收益保证”，并避免单独、突出使用绝对数值。"
+    },
+    {
+      "id": "B-03",
+      "cat": "B",
+      "cat_name": "数据与业绩夸大",
+      "level": "中",
+      "name": "隐瞒限制条件（利率“低至/起”、额度“最高”、期限、适用范围等）",
+      "type": "match",
+      "detect": "低至.{0,10}%|最低.{0,6}%起?|\\d(\\.\\d+)?%起|最高不超|高达\\d|最高可?达\\d|额度最高|最高\\d+万|券后|数量有限|部分车型|仅限.{0,10}客户|先到先得|以最终审批为准",
+      "conclusion": "文中出现「{m}」等最优值/上限值表述，但未同步披露适用条件、期限、例外情形与受众范围，属于隐瞒限制条件，易使消费者误认为普遍可得。",
+      "basis": [
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面，不得作虚假或者引人误解的宣传。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十六条",
+          "text": "经营者在经营活动中使用格式条款的，应当以显著方式提请消费者注意……与消费者有重大利害关系的内容。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（二）项",
+          "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+        }
+      ],
+      "suggestion": "以显著方式（加粗、加框、字号不小于正文）补充限制条件：适用客户范围、达标口径、活动期限、利率浮动规则、额度与期限上限、未达条件的实际成本等。"
+    },
+    {
+      "id": "B-04",
+      "cat": "B",
+      "cat_name": "数据与业绩夸大",
+      "level": "中",
+      "name": "制造稀缺紧迫感/片面强调集中营销时间限制",
+      "type": "match",
+      "detect": "先到先得|数量有限|额度有限|欲购从速|申购良机|抓紧时间|早做早踏实|限时|即将售罄|错过不再|仅剩|额度紧|趁早",
+      "conclusion": "文中出现「{m}」，通过制造稀缺、紧迫氛围施加不当影响，干扰金融消费者理性决策，属于不当营销诱导。",
+      "basis": [
+        {
+          "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》",
+          "article": "第十五条第（三）项",
+          "text": "不得使用欲购从速、申购良机等片面强调集中营销时间限制的表述。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "不得作虚假或者引人误解的宣传。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（一）项",
+          "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "删除该类表述；确需说明额度的，改为客观规则说明（如“本期额度××万元，售罄后按××规则轮候”），不得施加时间压力。"
+    },
+    {
+      "id": "B-05",
+      "cat": "B",
+      "cat_name": "数据与业绩夸大",
+      "level": "中",
+      "name": "数据、排名、履历引用未标明来源与统计口径",
+      "type": "match",
+      "detect": "同类排名前\\d+%|排名前\\d+%|行业头部|头部产品|历史管理规模超\\d+|规模超\\d+亿|近一年.{0,6}排名|截至\\d+月\\d+日|成立以来收益\\d",
+      "conclusion": "文中出现「{m}」，引用了业绩排名/规模/时点数据，但未标明数据来源、统计机构、统计区间与计算方法，属于引用不准确、不完整资料。",
+      "basis": [
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（二）项",
+          "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+        },
+        {
+          "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》",
+          "article": "第十五条第（一）项",
+          "text": "不得在未提供客观证据的情况下，使用业绩稳健、业绩优良、名列前茅、位居前列、唯一等表述。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者提供信息应当真实、全面。"
+        }
+      ],
+      "suggestion": "补充“数据来源：××机构；统计区间：××××年××月××日—××××年××月××日；计算方法：××”，并确保与产品说明书、定期报告披露口径一致。"
+    },
+    {
+      "id": "A-01",
+      "cat": "A",
+      "cat_name": "虚假或引人误解",
+      "level": "高",
+      "name": "将理财/保险产品与存款混同或简单类比",
+      "type": "match",
+      "detect": "比存款.{0,6}(划算|更|高)|存款替代|相当于存款|类存款|保本理财|和存款一样|存款.{0,4}升级版|把存款搬",
+      "conclusion": "文中出现「{m}」，将非存款金融产品与存款进行混同或类比，掩盖其风险属性差异，易导致金融消费者低估风险。",
+      "basis": [
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（四）项",
+          "text": "不得将销售的理财产品与存款或其他产品进行混同。"
+        },
+        {
+          "law": "《金融产品网络营销管理办法》（中国人民银行等八部门公告〔2026〕第9号）",
+          "article": "关于网络营销内容的规定",
+          "text": "不得夸大保险责任或保险产品收益，将保险产品收益与存款、资产管理产品等金融产品简单类比。"
+        }
+      ],
+      "suggestion": "删除类比表述，改为独立披露产品类型、风险等级、是否保本、收益计算方式，并明确“本产品为××，不同于存款，不受存款保险保障”。"
+    },
+    {
+      "id": "A-02",
+      "cat": "A",
+      "cat_name": "虚假或引人误解",
+      "level": "中",
+      "name": "对未来收益效果的暗示性诱导（财富增值、更高收益等）",
+      "type": "match",
+      "detect": "财富增值|实现财富|财富自由|享受更好的收益|收益更高|帮您实现|资产翻倍|躺赚|轻松赚钱|让钱生钱",
+      "conclusion": "文中出现「{m}」，对产品未来效果、收益作出暗示性诱导，未提供任何客观依据，易使消费者形成“稳赚”的错误预期。",
+      "basis": [
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第二十五条第（一）项",
+          "text": "不得对未来效果、收益或者与其相关的情况作出保证性承诺，明示或者暗示保本、无风险或者保收益等。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十二条",
+          "text": "银行、支付机构实际承担的义务不得低于在营销宣传活动中通过广告、资料或者说明等形式对金融消费者所承诺的标准。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（一）项",
+          "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "删除主观收益承诺，改为客观披露（产品类型、风险等级、业绩比较基准及测算依据、费用、赎回安排），并配风险揭示语。"
+    },
+    {
+      "id": "A-03",
+      "cat": "A",
+      "cat_name": "虚假或引人误解",
+      "level": "中",
+      "name": "使用“低风险/高收益/还款压力小”等弱化风险的诱导性用语",
+      "type": "match",
+      "detect": "还款压力小|压力小|轻松还款|无压力|低门槛|低风险|高收益|秒到账|零成本|无成本|超低.{0,4}(利率|成本)",
+      "conclusion": "文中出现「{m}」，属于弱化产品风险、突出收益便利的诱导性用语，未同时揭示对应风险与成本，构成引人误解的宣传。",
+      "basis": [
+        {
+          "law": "《金融产品网络营销管理办法》（中国人民银行等八部门公告〔2026〕第9号）",
+          "article": "关于网络营销内容的规定",
+          "text": "不得使用“低风险”“低门槛”“秒到账”“高收益”“低利率”“无成本”等诱导性用语。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（一）项",
+          "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "删除该类用语；如描述还款方式（如“按月付息、到期还本”），应同步提示到期一次性还本的资金安排压力与利率、期限、综合融资成本。"
+    },
+    {
+      "id": "C-01",
+      "cat": "C",
+      "cat_name": "利用监管背书",
+      "level": "高",
+      "name": "利用金融管理部门审核/备案程序误导消费者",
+      "type": "match",
+      "detect": "(银保监|金融监管总局|人民银行|央行|证监会|银监会).{0,12}(批准|审核|备案|认可|推荐|背书)|监管背书|政府背书|国家.{0,4}保证|监管认可",
+      "conclusion": "文中出现「{m}」，利用金融管理部门对金融产品或者服务的审核或者备案程序，易误导金融消费者认为监管部门已对该产品提供保证。",
+      "basis": [
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（三）项",
+          "text": "不得利用金融管理部门对金融产品或者服务的审核或者备案程序，误导金融消费者认为金融管理部门已对该金融产品或者服务提供保证。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（七）项",
+          "text": "不得利用政府公信力进行金融营销宣传……误导金融消费者认为国务院金融管理部门或地方金融监管部门对该金融产品或服务提供保证。"
+        },
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第九条第（二）项",
+          "text": "广告不得使用或者变相使用国家机关、国家机关工作人员的名义或者形象。"
+        }
+      ],
+      "suggestion": "删除该类表述；确需说明备案/登记情况的，应表述为“本产品已在全国银行业理财信息登记系统登记，登记编码××，可在中国理财网查询”，并明确“登记不代表监管机构对本产品的推荐或保证”。"
+    },
+    {
+      "id": "F-01",
+      "cat": "F",
+      "cat_name": "歧视性用语",
+      "level": "高",
+      "name": "含有或隐含性别、种族、宗教信仰歧视性用语",
+      "type": "match",
+      "detect": "仅限男性|仅限女性|男性优先|女性优先|限\\d{2}岁以下|不接待.{0,6}(民族|宗教)|限于.{0,6}(民族|宗教|性别|户籍)|(民族|宗教|性别).{0,4}限制|残疾人.{0,4}不予",
+      "conclusion": "文中出现「{m}」，含有或隐含与性别、种族、宗教信仰等相关的歧视性内容，违反金融营销宣传禁止性规定，并侵害金融消费者受尊重权与公平交易权。",
+      "basis": [
+        {
+          "law": "《中华人民共和国广告法》",
+          "article": "第九条第（九）项",
+          "text": "广告不得含有民族、种族、宗教、性别歧视的内容。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条",
+          "text": "银行、支付机构在进行营销宣传活动时不得有虚假、欺诈、隐瞒或者引人误解的宣传等行为。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（十一）项",
+          "text": "不得开展法律法规和国务院金融管理部门认定的其他违法违规金融营销宣传活动。"
+        }
+      ],
+      "suggestion": "删除歧视性限定条件，改为以风险承受能力、收入偿债能力、信用状况等客观标准描述客户准入条件。"
+    },
+    {
+      "id": "G-01",
+      "cat": "G",
+      "cat_name": "其他违规",
+      "level": "中",
+      "name": "不当评比、不当排序或贬低同业",
+      "type": "match",
+      "detect": "同业对比|相比.{0,8}(建行|工行|农行|其他银行|同业)|优于同业|他行.{0,6}(低|差|不如)|四大行仅.{0,4}代销|独家.{0,4}代销|行业头部",
+      "conclusion": "文中出现「{m}」，通过设置“同业对比”或排他性比较开展营销，属于以不当评比、不当排序方式进行的金融营销宣传，且引用他行数据存在不准确、口径不一致的风险。",
+      "basis": [
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（六）项",
+          "text": "不得以损害公平竞争的方式开展金融营销宣传活动……不得通过不当评比、不当排序等方式进行金融营销宣传。"
+        },
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（十二）项",
+          "text": "不得恶意诋毁、贬低其他理财产品销售机构或者其他理财产品。"
+        },
+        {
+          "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》",
+          "article": "第十五条第（四）项",
+          "text": "不得诋毁、贬低其他基金管理人、基金托管人或者基金销售机构。"
+        }
+      ],
+      "suggestion": "删除“同业对比”栏目及排他性表述；如确需引用，须标明他行产品名称、数据来源、统计口径与截止时间，并仅作客观陈述，不得贬低。"
+    },
+    {
+      "id": "G-02",
+      "cat": "G",
+      "cat_name": "其他违规",
+      "level": "中",
+      "name": "以抽奖、馈赠实物/权益方式促销金融产品",
+      "type": "match",
+      "detect": "送好礼|好礼|赠品|抽奖|返现|达标送|享多重权益|礼包|资产提升.{0,6}(权益|礼)|权益.{0,4}(赠送|领取)|积分兑换年费",
+      "conclusion": "文中出现「{m}」，以馈赠实物、代金权益等方式促销金融产品，属于以不正当利益诱导交易，且易弱化消费者对产品风险的关注。",
+      "basis": [
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（六）项",
+          "text": "不得提供抽奖、回扣、馈赠实物、代金权益及金融产品等销售理财产品。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（二）项",
+          "text": "不得以欺诈或引人误解的方式对金融产品或金融服务进行营销宣传。"
+        }
+      ],
+      "suggestion": "删除以“资产提升/新增资金达标”为条件的赠礼、权益促销内容；权益活动如属银行综合客户服务权益，应与具体产品销售脱钩，并披露活动规则与有效期。"
+    },
+    {
+      "id": "G-03",
+      "cat": "G",
+      "cat_name": "其他违规",
+      "level": "中",
+      "name": "违规发送营销信息/未提供拒收退订选择（电销、加微信等）",
+      "type": "match",
+      "detect": "我申请加您了|加您微信|手机号是微信|电话营销|外呼|拨打营销电话|短信.{0,4}推送|未经.{0,6}同意.{0,6}(发送|拨打)",
+      "conclusion": "文中出现「{m}」，涉及未经金融消费者同意或未向其提供拒绝继续接收方式的营销触达，侵害消费者自主选择权与个人信息权益。",
+      "basis": [
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（十）项",
+          "text": "未经金融消费者同意或请求，不得向其住宅、交通工具等发送金融营销信息，也不得以电子信息方式向其发送金融营销信息……应当向接收者提供拒绝继续接收的方式。"
+        },
+        {
+          "law": "《金融产品网络营销管理办法》（中国人民银行等八部门公告〔2026〕第9号）",
+          "article": "第十三条",
+          "text": "向金融消费者和投资者发送营销信息或者拨打营销电话的，应当提供拒收或者退订选择；拒收或者退订的，不得以同样方式再次发送营销信息或者拨打营销电话。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十九条",
+          "text": "经营者未经消费者同意或者请求，或者消费者明确表示拒绝的，不得向其发送商业性信息。"
+        }
+      ],
+      "suggestion": "在话术中增加同意确认与退出机制：“如您不愿意接受我行产品介绍，可在通话中告知或回复TD退订，我行不再致电”；添加微信前应取得客户明示同意，不得推定手机号即微信号。"
+    },
+    {
+      "id": "G-04",
+      "cat": "G",
+      "cat_name": "其他违规",
+      "level": "高",
+      "name": "缺失风险提示或风险提示不醒目",
+      "type": "missing",
+      "trigger": "理财|基金|保险|定存|存款|年化|收益|涨幅|收益率|贷款|分期|信用卡",
+      "required": "风险|谨慎|不代表|不保证|不预示|有风险|审慎",
+      "conclusion": "材料涉及金融产品推介（触发词：{m}），但全文未出现任何风险揭示或“投资/借贷有风险”类提示语，未履行风险提示义务，损害金融消费者知情权。",
+      "basis": [
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面，不得作虚假或者引人误解的宣传。"
+        },
+        {
+          "law": "《商业银行理财业务监督管理办法》",
+          "article": "第二十六条",
+          "text": "商业银行销售理财产品，应当加强投资者适当性管理，向投资者充分披露信息和揭示风险。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（一）项",
+          "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "在材料显著位置（标题下方或收益数据同版）补充风险提示，字号不小于正文、颜色与背景对比明显，如“理财非存款、产品有风险、投资须谨慎”“贷款有成本、量力而行、按时还款”。"
+    },
+    {
+      "id": "G-05",
+      "cat": "G",
+      "cat_name": "其他违规",
+      "level": "中",
+      "name": "从业人员自行编发/转载未经审查的营销宣传信息（流程校验项）",
+      "type": "match",
+      "detect": "自行编发|未经审查|未经审核|内部使用.{0,4}勿外传|待审",
+      "conclusion": "材料出现「{m}」相关情形，提示该材料可能未履行本行消保审查与合规审查程序，存在“先发后审”或未审即发的合规风险。",
+      "basis": [
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（九）项",
+          "text": "不得允许从业人员自行编发或转载未经相关金融产品或金融服务经营者审核的金融营销宣传信息。"
+        },
+        {
+          "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》",
+          "article": "第十六条",
+          "text": "基金管理人、基金销售机构应当建立健全基金宣传推介材料的合规审查机制，相关审查材料应当存档备查。"
+        }
+      ],
+      "suggestion": "流程校验项：要求提交方补充《营销宣传材料审查申请表》、业务条线初审意见与消保审查编号；未经审查的材料不得对外发布。"
+    },
+    {
+      "id": "H-01",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "高",
+      "name": "私募/合格投资者产品向不特定对象公开宣传",
+      "type": "match",
+      "detect": "合格投资者|起点\\d+(\\.\\d+)?万|量化对冲|指数增强|私募|仅限.{0,6}合格投资者",
+      "conclusion": "文中出现「{m}」，涉及私募或仅向合格投资者销售的产品。若在网点折页、公众号、短信等公开渠道向不特定对象展示其业绩与要素，构成向不特定对象宣传推介。",
+      "basis": [
+        {
+          "law": "《私募投资基金监督管理暂行办法》",
+          "article": "第十四条",
+          "text": "私募基金管理人、私募基金销售机构不得向合格投资者之外的单位和个人募集资金，不得通过报刊、电台、电视、互联网等公众传播媒体或者讲座、报告会、分析会和布告、传单、手机短信、微信、博客和电子邮件等方式，向不特定对象宣传推介。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第一条规定",
+          "text": "金融产品或金融服务经营者应当在国务院金融管理部门和地方金融监管部门许可的金融业务范围内开展金融营销宣传，不得开展超出业务许可范围的金融营销宣传活动。"
+        }
+      ],
+      "suggestion": "仅在已认定为合格投资者的定向名单内推送，并设置身份校验环节；公开渠道材料中删除该产品的收益与要素展示，保留“我行代销私募类产品，仅向合格投资者定向提供”的表述。"
+    },
+    {
+      "id": "H-02",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "高",
+      "name": "保险产品分红/利益演示未标明非保证性",
+      "type": "missing",
+      "trigger": "分红|演示|年化收益率约|满期金|现金价值|年金|两全保险|折算年化",
+      "required": "红利.{0,8}不确定|非保证利益|红利分配是不确定的|保单红利.{0,6}不确定",
+      "conclusion": "材料演示保险产品利益（触发词：{m}），但未标明该利益演示基于精算假设、红利分配不确定、不代表公司历史或未来经营业绩，易被误认为确定收益。",
+      "basis": [
+        {
+          "law": "《一年期以上人身保险产品信息披露规则》",
+          "article": "第八条",
+          "text": "分红型保险产品说明书应当在显著位置用比正文至少大一号的黑体字提示该产品为分红型保险产品，提示未来的保单红利为非保证利益，其红利分配是不确定的；利益演示应当用醒目字体标明该利益演示是基于公司的精算及其他假设，不代表公司历史经营业绩，也不代表对公司未来经营业绩的预期，保单的红利分配是不确定的。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "补充“本利益演示基于公司精算假设，红利分配不确定，实际可能为0，不代表历史及未来经营业绩”；采用保证利益与红利利益两档演示，不得披露用于演示的投资回报率。"
+    },
+    {
+      "id": "H-03",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "高",
+      "name": "贷款资金用途提示缺失",
+      "type": "missing",
+      "trigger": "贷款|消费贷|分期|授信|额度|借款",
+      "required": "不得用于|禁止.{0,6}领域|专款专用|用途.{0,8}(限制|合法|合规)",
+      "conclusion": "材料推介贷款产品（触发词：{m}），但未提示贷款资金用途限制（不得用于购房、证券投资、偿还其他贷款等）及挪用后果，易诱导违规用款。",
+      "basis": [
+        {
+          "law": "《个人贷款管理办法》（国家金融监督管理总局令2024年第3号）",
+          "article": "第七条",
+          "text": "个人贷款用途应符合法律法规规定和国家有关政策，贷款人不得发放无指定用途的个人贷款；贷款人应加强贷款资金支付管理，有效防范个人贷款业务风险。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者提供信息应当真实、全面。"
+        }
+      ],
+      "suggestion": "补充“本贷款资金仅可用于××等合法消费用途，不得用于购房、证券投资、偿还贷款等法律法规禁止领域，挪用将承担违约责任，贷款人有权提前收回贷款”。"
+    },
+    {
+      "id": "H-04",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "中",
+      "name": "贷款期限/额度突破消费用途上限或表述含混",
+      "type": "match",
+      "detect": "消费.{0,4}贷款.{0,6}期限最长\\d年|消费贷.{0,4}\\d年|授信长达\\s?\\d年|期限最长7年",
+      "conclusion": "文中出现「{m}」，消费用途贷款期限表述需与监管上限一致；材料未区分消费用途与生产经营用途，存在期限超限或表述含混的风险。",
+      "basis": [
+        {
+          "law": "《个人贷款管理办法》（国家金融监督管理总局令2024年第3号）",
+          "article": "第八条",
+          "text": "用于个人消费的贷款期限不得超过五年；用于生产经营的贷款期限一般不超过五年，对于贷款用途对应的经营现金流回收周期较长的，可适当延长贷款期限，最长不超过十年。"
+        }
+      ],
+      "suggestion": "区分用途披露期限：个人消费用途最长不超过5年；生产经营用途最长不超过10年（需说明适用条件）。删除混同表述。"
+    },
+    {
+      "id": "H-05",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "中",
+      "name": "资产配置建议未提示适当性与非投资建议属性",
+      "type": "missing",
+      "trigger": "配置比例|配置建议|稳健型配置|进取型配置|保守型配置|配置比例建议",
+      "required": "风险承受能力|适当性|不构成.{0,6}投资建议|仅供参考|需经.{0,6}评估",
+      "conclusion": "材料给出资产配置比例建议（触发词：{m}），但未提示需先完成风险承受能力评估、产品风险等级与投资者风险承受能力相匹配，也未声明“不构成投资建议”。",
+      "basis": [
+        {
+          "law": "《理财公司理财产品销售管理暂行办法》",
+          "article": "第二十五条第（一）项",
+          "text": "不得误导投资者购买与其风险承受能力不相匹配的理财产品。"
+        },
+        {
+          "law": "《商业银行理财业务监督管理办法》",
+          "article": "第二十六条",
+          "text": "商业银行销售理财产品，应当加强投资者适当性管理，向投资者充分披露信息和揭示风险。"
+        },
+        {
+          "law": "《全国法院民商事审判工作会议纪要》",
+          "article": "关于适当性义务",
+          "text": "卖方机构未尽适当性义务，导致金融消费者在购买金融产品过程中遭受损失的，应当承担赔偿责任。"
+        }
+      ],
+      "suggestion": "在配置建议页首补充“以下比例仅为一般性参考，不构成投资建议；购买前需完成风险承受能力评估，产品风险等级应与您的风险承受能力相匹配”。"
+    },
+    {
+      "id": "H-06",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "中",
+      "name": "信用卡/分期权益与费率条件披露不完整",
+      "type": "match",
+      "detect": "年费\\d+元|折扣价\\d+元|免首年年费|积分兑换.{0,4}年费|月日均.{0,10}资产|跨境返\\d+%|零息|低息",
+      "conclusion": "文中出现「{m}」，涉及年费减免、返现比例、零息/低息等优惠，但未完整披露达标条件、有效期、排除情形与未达条件的实际成本。",
+      "basis": [
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十六条",
+          "text": "经营者在经营活动中使用格式条款的，应当以显著方式提请消费者注意与消费者有重大利害关系的内容，并按照消费者的要求予以说明。"
+        },
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（二）项",
+          "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件。"
+        },
+        {
+          "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+          "article": "第二条第（五）项",
+          "text": "不得损害金融消费者知情权。"
+        }
+      ],
+      "suggestion": "以表格形式列明：年费标准与减免条件、活动有效期、返现上限与排除交易类型、零息方案是否收取手续费及实际年化成本（IRR）。"
+    },
+    {
+      "id": "H-07",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "中",
+      "name": "跨境/结构性存款类产品未提示汇率与政策限制条件",
+      "type": "missing",
+      "trigger": "南向通|跨境.{0,4}存款|跨境.{0,4}理财|外币|汇率|香港",
+      "required": "汇率风险|额度|适用.{0,6}条件|政策.{0,4}限制|不适用.{0,6}存款保险|结售汇",
+      "conclusion": "材料推介跨境/外币类产品（触发词：{m}），但未提示汇率风险、额度限制、政策适用条件及是否适用境内存款保险制度，属于隐瞒限制条件。",
+      "basis": [
+        {
+          "law": "《中国人民银行金融消费者权益保护实施办法》",
+          "article": "第二十三条第（二）项",
+          "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+        }
+      ],
+      "suggestion": "补充“本产品受跨境资金汇划政策与额度管理，存在汇率波动风险，收益随汇率变动可能低于同期境内存款；本产品不适用《存款保险条例》”等提示。"
+    },
+    {
+      "id": "H-08",
+      "cat": "H",
+      "cat_name": "条线专项",
+      "level": "中",
+      "name": "理财产品宣传文本未充分披露产品要素与费用",
+      "type": "missing",
+      "trigger": "理财产品|理财|封闭式|定开|最短持有|风险等级|业绩比较基准",
+      "required": "产品类型|投资组合|估值方法|托管|收费|费率|开放期.?赎回|投资范围",
+      "conclusion": "材料推介理财产品（触发词：{m}），但未见产品类型、投资范围/组合、估值方法、托管安排、收费安排与赎回规则等要素的完整披露，信息披露不充分。",
+      "basis": [
+        {
+          "law": "《商业银行理财业务监督管理办法》",
+          "article": "第二十六条",
+          "text": "商业银行理财产品宣传销售文本应当全面、如实、客观地反映理财产品的重要特性，充分披露理财产品类型、投资组合、估值方法、托管安排、风险和收费等重要信息，所使用的语言表述必须真实、准确和清晰。"
+        },
+        {
+          "law": "《中华人民共和国消费者权益保护法》",
+          "article": "第二十条",
+          "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面。"
+        }
+      ],
+      "suggestion": "补充产品要素表：产品类型（固定收益类/权益类等）、风险等级、投资范围与比例、估值方法、托管机构、各项费率、开放/赎回安排、业绩比较基准及测算依据。"
+    }
+  ]
+};
+const REVIEW = [
+  {
+    "material": "材料1",
+    "name": "材料1-五谷丰登理财产品宣传海报",
+    "type": "海报（图片，经OCR识别）",
+    "line": "理财",
+    "ocr_note": "材料为图片型海报，审查基于OCR识别文本；其中“最好 最优 最佳”“资产有保障”“100%有收益”“新增资金达标送好礼”“业绩比较基准 3.0X%”“成立以来年化收益率 5.10%/5.89%”等关键要素已多轮交叉识别确认。",
+    "summary": "海报主视觉含“最好、最优、最佳”极限用语与“资产有保障”“100%有收益”等保收益暗示，同时以“新增资金达标送好礼”促销、突出展示成立以来年化收益率与业绩比较基准，风险提示仅以小字置于版面底部，显著性不足。共发现6项问题，其中高风险4项。",
+    "verdict": "不通过，须修改后重新提交审查",
+    "items": [
+      {
+        "no": 1,
+        "rule": "E-01",
+        "risk": "高",
+        "quote": "最好、最优、最佳（海报主视觉标题区）",
+        "conclusion": "海报主视觉出现“最好、最优、最佳”三处绝对化用语，属于《广告法》第九条第（三）项明令禁止的“国家级”“最高级”“最佳”类用语。该表述直接指向理财产品品质与收益水平，且位于版面最醒目位置，易使金融消费者对该产品形成“同类最优、风险最低”的错误认知，构成引人误解的宣传。",
+        "basis": [
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第九条第（三）项",
+            "text": "广告不得使用“国家级”“最高级”“最佳”等用语。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面，不得作虚假或者引人误解的宣传。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（二）项",
+            "text": "不得以欺诈或引人误解的方式对金融产品或金融服务进行营销宣传。"
+          }
+        ],
+        "suggestion": "删除“最好、最优、最佳”字样，改为可核查的客观表述，如“本产品风险等级2级（中低风险）”“成立以来年化收益率5.10%/5.89%（截至5月24日，数据来源：产品定期报告）”，并同步列明统计区间与来源。"
+      },
+      {
+        "no": 2,
+        "rule": "D-01",
+        "risk": "高",
+        "quote": "资产有保障；100%有收益；产品类型（固定收益类）",
+        "conclusion": "海报出现“资产有保障”及“100%有收益”表述，对非保本投资型理财产品作出本金有保障、收益确定的明示性承诺，属于《广告法》第二十五条第（一）项与银发〔2019〕316号明令禁止的保本、保收益承诺，是本海报风险等级最高的问题。理财产品为非保本浮动收益产品，该表述与产品法律属性直接冲突。",
+        "basis": [
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第二十五条第（一）项",
+            "text": "招商等有投资回报预期的商品或者服务广告，应当对可能存在的风险以及风险责任承担有合理提示或者警示，不得对未来效果、收益或者与其相关的情况作出保证性承诺，明示或者暗示保本、无风险或者保收益等。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（二）项",
+            "text": "不得对资产管理产品未来效果、收益或相关情况作出保证性承诺，明示或暗示保本、无风险或保收益。"
+          },
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（九）项",
+            "text": "不得为理财产品提供直接或间接、显性或隐性担保，包括部分或全部承诺本金或收益保障。"
+          },
+          {
+            "law": "《商业银行理财业务监督管理办法》（中国银行保险监督管理委员会令2018年第6号）",
+            "article": "第二十六条",
+            "text": "不得宣传或承诺保本保收益，不得误导投资者购买与其风险承受能力不相匹配的理财产品。"
+          }
+        ],
+        "suggestion": "删除“资产有保障”“100%有收益”，替换为“本产品为非保本浮动收益型理财产品，不保证本金和收益，投资者可能因市场波动产生本金损失”；如“资产有保障”系指存款或保险保障安排，须明确产品性质并说明保障范围与限额。"
+      },
+      {
+        "no": 3,
+        "rule": "G-02",
+        "risk": "高",
+        "quote": "升级前，新增资金达标送好礼",
+        "conclusion": "海报以“新增资金达标送好礼”作为购买诱导，属于以馈赠实物、代金权益方式促销理财产品，违反理财产品销售禁止性规定；且该促销与“升级前”时点绑定，进一步强化了不当诱导效果。",
+        "basis": [
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（六）项",
+            "text": "不得提供抽奖、回扣、馈赠实物、代金权益及金融产品等销售理财产品。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（二）项",
+            "text": "不得以欺诈或引人误解的方式对金融产品或金融服务进行营销宣传。"
+          }
+        ],
+        "suggestion": "删除“达标送好礼”等与产品购买挂钩的赠礼内容；如属银行综合客户权益活动，须与具体产品销售脱钩，并单独披露活动规则、参与条件、有效期及权益兑付方式。"
+      },
+      {
+        "no": 4,
+        "rule": "B-01",
+        "risk": "高",
+        "quote": "成立以来年化收益率 5.10%（截至5月24日）；成立以来年化收益率 5.89%（截至5月24日）；历史业绩",
+        "conclusion": "海报以醒目字号展示两只产品“成立以来年化收益率”作为历史业绩，但存在三点问题：一是仅展示单一有利时点业绩，未登载该理财产品或本行同类理财产品的过往平均业绩和最好、最差业绩；二是风险提示（“理财产品过往业绩、业绩比较基准不代表其未来表现，不等于理财产品实际收益，投资须谨慎”）以极小字号置于版面最底部，与收益数据不在同一视觉区域，未达到“醒目”要求；三是数据未标明计算口径与信息来源。",
+        "basis": [
+          {
+            "law": "《商业银行理财业务监督管理办法》（中国银行保险监督管理委员会令2018年第6号）",
+            "article": "第二十六条",
+            "text": "在理财产品宣传销售文本中只能登载该理财产品或者本行同类理财产品的过往平均业绩和最好、最差业绩，并以醒目文字提醒投资者“理财产品过往业绩不代表其未来表现，不等于理财产品实际收益，投资须谨慎”。"
+          },
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（二）项",
+            "text": "不得虚假宣传、片面或者不当宣传，夸大过往业绩，预测理财产品的投资业绩。"
+          },
+          {
+            "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》（证监会公告〔2020〕第16号）",
+            "article": "第十五条第（五）项",
+            "text": "不得夸大或者片面宣传基金管理人、基金经理或者其管理的基金的过往业绩。"
+          }
+        ],
+        "suggestion": "①将风险提示移至收益数据同版，字号不小于收益数据字号的1/2并与背景形成明显色差；②补充“过往平均业绩X%、最好业绩X%、最差业绩X%（统计区间×年×月—×年×月）”；③标明业绩数据与信息来源（产品定期报告/管理人官网）。"
+      },
+      {
+        "no": 5,
+        "rule": "B-02",
+        "risk": "中",
+        "quote": "封闭期 约1年；开放期 每月18日-24日；业绩比较基准 3.0X%；风险等级 2级",
+        "conclusion": "海报以表格单独、突出使用绝对数值展示业绩比较基准（3.0X%），但未说明该基准的选择原因、测算依据或计算方法，也未说明其与产品实际收益的关系，易被消费者直接理解为预期收益率。",
+        "basis": [
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（三）项",
+            "text": "不得使用未说明选择原因、测算依据或计算方法的业绩比较基准，单独或突出使用绝对数值、区间数值展示业绩比较基准。"
+          },
+          {
+            "law": "《商业银行理财业务监督管理办法》（中国银行保险监督管理委员会令2018年第6号）",
+            "article": "第二十六条",
+            "text": "商业银行发行理财产品，不得宣传理财产品预期收益率。"
+          }
+        ],
+        "suggestion": "补充“业绩比较基准由管理人依据××投资策略与××市场假设测算，不构成收益承诺”的脚注，并在表格中避免单独加粗放大该数值。"
+      },
+      {
+        "no": 6,
+        "rule": "B-05",
+        "risk": "中",
+        "quote": "邱勃然，CFA、CIA、CMA、CPA（中国、美国），美国理学硕士，9年相关工作经验……历史管理规模超3000亿",
+        "conclusion": "海报集中展示基金经理个人资质与管理规模，属于以专业人士资历作推荐、证明，且“历史管理规模超3000亿”未标明统计主体、统计区间与口径，存在引用不完整数据资料的问题。",
+        "basis": [
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第二十五条第（二）项",
+            "text": "不得利用学术机构、行业协会、专业人士、受益者的名义或者形象作推荐、证明。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（二）项",
+            "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+          },
+          {
+            "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》（证监会公告〔2020〕第16号）",
+            "article": "第十五条第（一）项",
+            "text": "不得在未提供客观证据的情况下，使用业绩稳健、业绩优良、名列前茅、位居前列、唯一等表述。"
+          }
+        ],
+        "suggestion": "压缩个人履历篇幅，将“历史管理规模超3000亿”改为“曾任××机构投资经理，管理规模峰值××亿元（截至××年××月××日）”，并确保与基金管理人公开披露一致。"
+      }
+    ]
+  },
+  {
+    "material": "材料2",
+    "name": "材料2-提前还款客群营销话术",
+    "type": "营销话术/外呼脚本（Word）",
+    "line": "理财（电话营销）",
+    "ocr_note": "",
+    "summary": "话术以“利率低、不必提前还款、资金参加活动收益更好”劝阻客户提前还款，通篇未披露任何产品要素与风险，含“财富增值”“抓紧时间、早做早踏实”“额度有限”等收益暗示与时间施压表述，并以“资产提升享好礼”促销，同时存在未经明示同意添加微信的触达合规问题。共发现7项问题，其中高风险5项。",
+    "verdict": "不通过，须修改后重新提交审查",
+    "items": [
+      {
+        "no": 1,
+        "rule": "A-02",
+        "risk": "高",
+        "quote": "目前贷款利率整体还是比较低的……您的还款资金可以通过参加活动享受更好的收益，不一定需要提前还款。我们网点有很多适合您的产品，可以帮您实现财富增值。",
+        "conclusion": "话术以“利率整体较低”“享受更好的收益”为由劝阻客户行使提前还款权利（侵害消费者自主选择权），并对产品未来效果、收益作出暗示性承诺。“更好的收益”“财富增值”无任何客观依据，且与理财产品非保本浮动收益属性冲突，构成引人误解的宣传。",
+        "basis": [
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第二十五条第（一）项",
+            "text": "不得对未来效果、收益或者与其相关的情况作出保证性承诺，明示或者暗示保本、无风险或者保收益等。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十二条第（二）款",
+            "text": "银行、支付机构实际承担的义务不得低于在营销宣传活动中通过广告、资料或者说明等形式对金融消费者所承诺的标准。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（一）项",
+            "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第九条",
+            "text": "消费者享有自主选择商品或者服务的权利。"
+          }
+        ],
+        "suggestion": "删除“更好的收益”“帮您实现财富增值”等承诺性话术；改为客观告知：“我行在售××产品，风险等级×级，业绩比较基准×%（测算依据：××），不保证本金和收益；是否继续持有贷款或办理提前还款，由您根据资金使用安排自主决定”，并提示提前还款规则与违约金（如有）。"
+      },
+      {
+        "no": 2,
+        "rule": "G-04",
+        "risk": "高",
+        "quote": "（全篇）未出现任何风险提示、产品类型、风险等级、费用与赎回安排说明",
+        "conclusion": "话术通篇仅强调收益与权益，未向客户披露产品类型（存款/理财/保险）、风险等级、是否保本、费用、期限与赎回安排，亦无任何风险揭示语，未履行信息披露与风险提示义务，客户在电话场景下更难获得书面信息，风险更为突出。",
+        "basis": [
+          {
+            "law": "《商业银行理财业务监督管理办法》（中国银行保险监督管理委员会令2018年第6号）",
+            "article": "第二十六条",
+            "text": "商业银行销售理财产品，应当加强投资者适当性管理，向投资者充分披露信息和揭示风险。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（五）项",
+            "text": "不得损害金融消费者知情权。"
+          }
+        ],
+        "suggestion": "在话术中固化必说风险提示语：“该产品为非保本浮动收益型，风险等级×级，不保证本金和收益，投资须谨慎”；并要求电话成交后以短信/微信发送标准化产品说明书与风险揭示书。"
+      },
+      {
+        "no": 3,
+        "rule": "B-04",
+        "risk": "高",
+        "quote": "最近利率经常调整，越是好产品，额度越有限。建议您抓紧时间，早做早踏实。",
+        "conclusion": "话术通过“额度越有限”“抓紧时间”“早做早踏实”制造稀缺与紧迫氛围，对客户施加不当时间压力，干扰其理性决策，属于片面强调集中营销时间限制的不当营销诱导。",
+        "basis": [
+          {
+            "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》（证监会公告〔2020〕第16号）",
+            "article": "第十五条第（三）项",
+            "text": "不得使用欲购从速、申购良机等片面强调集中营销时间限制的表述。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（一）项",
+            "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "不得作虚假或者引人误解的宣传。"
+          }
+        ],
+        "suggestion": "删除该类施压话术；确需说明额度的，改为客观陈述“本期产品额度××万元，售罄后下一期开放时间为××”，不得使用“抓紧”“早做早踏实”等催促性表达。"
+      },
+      {
+        "no": 4,
+        "rule": "D-01",
+        "risk": "高",
+        "quote": "我们手机银行生活板块里可以看到保本优选和理财优选，里面对目前比较好的产品进行了推荐",
+        "conclusion": "“保本优选”栏目名称直接向客户传递“该专区产品保本”的信号，构成对理财产品保本的暗示性承诺；“比较好的产品”为主观推荐性表述，缺乏客观标准与依据，易误导客户将推荐等同收益保证。",
+        "basis": [
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（二）项",
+            "text": "不得明示或暗示保本、无风险或保收益。"
+          },
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（九）项",
+            "text": "不得为理财产品提供直接或间接、显性或隐性担保，包括部分或全部承诺本金或收益保障。"
+          },
+          {
+            "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》（证监会公告〔2020〕第16号）",
+            "article": "第十五条第（一）项",
+            "text": "不得在未提供客观证据的情况下，使用业绩稳健、业绩优良、名列前茅、位居前列、唯一等表述。"
+          }
+        ],
+        "suggestion": "将栏目更名为“稳健优选/现金管理类优选”等不含“保本”字样的名称；话术改为“该专区按产品风险等级分类展示，具体产品的风险等级、业绩比较基准与风险揭示以产品说明书为准”，并删除“比较好的”等主观评价。"
+      },
+      {
+        "no": 5,
+        "rule": "G-02",
+        "risk": "高",
+        "quote": "资产提升享好礼，升级收益，享多重权益……资产提升最高可获得XX元权益；您在其他银行还有资金吗?也可以多转过来一些，资产提升越多，可享权益越多",
+        "conclusion": "话术以资产提升额度为条件赠送权益、礼遇，属以馈赠权益方式促销金融产品；同时直接劝导客户从他行转移资金以获取权益，构成以不当利益诱导交易，且未对客户资金的实际适配性做任何适当性判断。",
+        "basis": [
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（六）项",
+            "text": "不得提供抽奖、回扣、馈赠实物、代金权益及金融产品等销售理财产品。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（六）项",
+            "text": "不得以损害公平竞争的方式开展金融营销宣传活动。"
+          },
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（一）项",
+            "text": "不得误导投资者购买与其风险承受能力不相匹配的理财产品。"
+          }
+        ],
+        "suggestion": "删除以“资产提升”为条件的赠礼与权益换算话术；不得主动劝导客户从他行转出资金。如需介绍客户权益体系，应说明“权益为银行综合客户服务内容，与具体产品购买结果不挂钩”，并在推荐前完成风险承受能力评估。"
+      },
+      {
+        "no": 6,
+        "rule": "G-03",
+        "risk": "中",
+        "quote": "您手机号是微信号吧？我申请加您了，您通过下……以后微信常联系",
+        "conclusion": "话术默认客户手机号即微信号并据此发送好友申请，属于在未取得客户明示同意的情况下以电子信息方式发送营销信息；且全篇未提供拒绝继续接收的方式，侵害消费者自主选择权与个人信息权益。",
+        "basis": [
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（十）项",
+            "text": "未经金融消费者同意或请求，不得向其住宅、交通工具等发送金融营销信息，也不得以电子信息方式向其发送金融营销信息……应当向接收者提供拒绝继续接收的方式。"
+          },
+          {
+            "law": "《金融产品网络营销管理办法》（中国人民银行等八部门公告〔2026〕第9号，2026年9月30日施行）",
+            "article": "第十三条",
+            "text": "向金融消费者和投资者发送营销信息或者拨打营销电话的，应当提供拒收或者退订选择；拒收或者退订的，不得以同样方式再次发送营销信息或者拨打营销电话。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十九条",
+            "text": "经营者未经消费者同意或者请求，或者消费者明确表示拒绝的，不得向其发送商业性信息。"
+          }
+        ],
+        "suggestion": "改为征询式话术：“方便留一个您的微信吗？经您同意后我添加到您，后续您也可以随时要求我停止推送”；并记录客户同意与拒收/退订请求，建立禁呼名单。"
+      },
+      {
+        "no": 7,
+        "rule": "H-05",
+        "risk": "中",
+        "quote": "（全篇）未出现风险承受能力评估、适当性匹配、不构成投资建议等提示",
+        "conclusion": "话术面向已申请提前还款的客群推介理财产品，但全程未安排风险承受能力评估，也未提示产品风险等级需与客户风险承受能力相匹配，存在适当性管理缺失风险。",
+        "basis": [
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（一）项",
+            "text": "不得误导投资者购买与其风险承受能力不相匹配的理财产品。"
+          },
+          {
+            "law": "《商业银行理财业务监督管理办法》（中国银行保险监督管理委员会令2018年第6号）",
+            "article": "第二十六条",
+            "text": "商业银行销售理财产品，应当加强投资者适当性管理，向投资者充分披露信息和揭示风险。"
+          }
+        ],
+        "suggestion": "话术中加入“在产品推荐前，需要请您完成一次风险承受能力测评（约2分钟），我将根据测评结果匹配风险等级合适的产品”，并留存评估记录。"
+      }
+    ]
+  },
+  {
+    "material": "材料3",
+    "name": "材料3-代发薪高管财富管理甄选服务",
+    "type": "产品与服务推介手册（PDF）",
+    "line": "综合（理财/基金/保险/贷款/信用卡）",
+    "ocr_note": "",
+    "summary": "手册覆盖保守/稳健/进取三档配置建议及融资、信用卡产品，问题集中于：跨境存款“保本保息”与限制条件缺失、“持有30日正收益概率100%”保证性承诺、私募产品公开展示业绩、保险分红演示未标明非保证性、设置“同业对比”栏目进行不当评比、信用卡权益“无限次/无上限”绝对化表述。共发现8项问题，其中高风险6项。",
+    "verdict": "不通过，须修改后重新提交审查",
+    "items": [
+      {
+        "no": 1,
+        "rule": "D-01",
+        "risk": "高",
+        "quote": "跨境存款 中银香港“南向通”：人民币定期存款3个月2%，保本保息，提前锁定利率",
+        "conclusion": "“保本保息”用于宣传虽指向存款，但材料整体为理财产品配置手册，与同页理财产品、基金产品并列展示，易使消费者将“保本保息”理解为对本手册全部产品的收益保证，构成理财产品与存款混同；且跨境产品未提示汇率风险、额度与政策限制、是否适用境内存款保险。",
+        "basis": [
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（四）项",
+            "text": "不得将销售的理财产品与存款或其他产品进行混同。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（二）项",
+            "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+          }
+        ],
+        "suggestion": "将“保本保息”限定于该存款产品并加注“本产品为境外机构存款，受香港存款保障计划限额保护，不适用《存款保险条例》；存在汇率波动风险，实际人民币收益随汇率变动；受跨境资金汇划额度与政策管理”；与理财产品分区展示，明确区分产品性质。"
+      },
+      {
+        "no": 2,
+        "rule": "D-01",
+        "risk": "高",
+        "quote": "中银理财最短持有期福固收增强368天：成立以来收益4%，持有30日正收益概率100%",
+        "conclusion": "“持有30日正收益概率100%”以历史统计结果指向未来收益表现，属于对理财产品未来效果、收益作出保证性承诺的显性表述，风险极高；同时“成立以来收益4%”未标明统计区间与计算口径。",
+        "basis": [
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第二十五条第（一）项",
+            "text": "不得对未来效果、收益或者与其相关的情况作出保证性承诺，明示或者暗示保本、无风险或者保收益等。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（二）项",
+            "text": "不得对资产管理产品未来效果、收益或相关情况作出保证性承诺，明示或暗示保本、无风险或保收益。"
+          },
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（九）项",
+            "text": "不得为理财产品提供直接或间接、显性或隐性担保。"
+          }
+        ],
+        "suggestion": "删除“持有30日正收益概率100%”表述；改为“成立以来年化收益率4%（截至××年××月××日），过往业绩不代表未来表现，本产品不保证本金和收益”。"
+      },
+      {
+        "no": 3,
+        "rule": "H-01",
+        "risk": "高",
+        "quote": "诚奇慧盈量化中性7号（2025年收益11.99%，购买起点金额40.2万）；鸣石慧盈中证1000指数增强1期（2025年收益68.61%，购买起点金额100.5万）",
+        "conclusion": "手册在面向代发薪客户的通用推介材料中展示私募/资管类产品的业绩与要素，虽标注“仅限合格投资者购买”，但仍属于通过宣传材料向不特定对象展示私募产品业绩，存在向不特定对象宣传推介的合规风险；且高收益数据（68.61%）极为醒目，易造成误导。",
+        "basis": [
+          {
+            "law": "《私募投资基金监督管理暂行办法》（中国证券监督管理委员会令第105号）",
+            "article": "第十四条",
+            "text": "不得向合格投资者之外的单位和个人募集资金，不得通过报刊、电视、互联网等公众传播媒体或者讲座、报告会、传单、微信、电子邮件等方式，向不特定对象宣传推介。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第一条",
+            "text": "应当在国务院金融管理部门和地方金融监管部门许可的金融业务范围内开展金融营销宣传，不得开展超出业务许可范围的金融营销宣传活动。"
+          }
+        ],
+        "suggestion": "从通用手册中删除该类产品的业绩与要素展示，仅保留“我行面向合格投资者提供私募类代销产品，具体信息经身份与适当性认定后定向提供”；定向推送前完成合格投资者认定与风险揭示书签署。"
+      },
+      {
+        "no": 4,
+        "rule": "H-02",
+        "risk": "高",
+        "quote": "中银稳得鑫两全保险（分红型）：年化收益率约2.6%/2.7%/2.8%；满期金（保底部分）折算年化收益约1.3%/1.4%/1.5%；平安安盈年金保险（分红型）：年金给付每年1.75%，另有现金分红添惊喜；中银三星中银稳盈（2025）两全保险：满期金折算年化收益率约1.7%/1.8%/1.9%/2.0%",
+        "conclusion": "材料对分红型保险产品以年化收益率形式演示利益，但全文未标明该利益演示基于精算假设、红利分配不确定、不代表公司历史及未来经营业绩，也未采用保证利益与红利利益两档演示；“现金分红添惊喜”进一步强化了收益确定性暗示。",
+        "basis": [
+          {
+            "law": "《一年期以上人身保险产品信息披露规则》（银保监规〔2022〕16号）",
+            "article": "第八条",
+            "text": "分红型保险产品说明书应当在显著位置用比正文至少大一号的黑体字提示该产品为分红型保险产品……提示未来的保单红利为非保证利益，其红利分配是不确定的；利益演示应当用醒目字体标明该利益演示是基于公司的精算及其他假设，不代表公司历史经营业绩，也不代表对公司未来经营业绩的预期……不得披露用于演示的分红型保险产品的投资回报率。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+          }
+        ],
+        "suggestion": "补充醒目提示：“本利益演示基于公司精算及其他假设，红利分配不确定，实际可能为0，不代表公司历史经营业绩与未来预期”；改为保证利益、红利利益两档演示，删除“添惊喜”等确定性暗示用语，并不得披露用于演示的投资回报率。"
+      },
+      {
+        "no": 5,
+        "rule": "G-01",
+        "risk": "高",
+        "quote": "同业对比：建行4个月1.86%-1.91%；农行4个月1.70%-2.05%；工行4个月1.70%-1.90%；建行同类3.12%；工行同类3.27%；中行独家、行业头部产品；四大行仅中行代销",
+        "conclusion": "手册专设“同业对比”栏目逐项列示他行收益率并作优劣排序，属于以不当评比、不当排序方式开展营销宣传；所引用的他行产品数据未标明产品名称、统计时点与来源，存在数据不准确、口径不可比的风险；“独家”“行业头部”亦缺乏客观依据。",
+        "basis": [
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（六）项",
+            "text": "不得以损害公平竞争的方式开展金融营销宣传活动……不得通过不当评比、不当排序等方式进行金融营销宣传。"
+          },
+          {
+            "law": "《理财公司理财产品销售管理暂行办法》（中国银行保险监督管理委员会令2021年第4号）",
+            "article": "第二十五条第（十二）项",
+            "text": "不得恶意诋毁、贬低其他理财产品销售机构或者其他理财产品。"
+          },
+          {
+            "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》（证监会公告〔2020〕第16号）",
+            "article": "第十五条第（四）项",
+            "text": "不得诋毁、贬低其他基金管理人、基金托管人或者基金销售机构。"
+          }
+        ],
+        "suggestion": "删除“同业对比”栏目及“独家”“行业头部”等排他性表述；如确需引用比较数据，须列明他行产品名称、数据来源、统计区间与比较方法，并仅作客观陈述，不得排序优劣。"
+      },
+      {
+        "no": 6,
+        "rule": "B-01",
+        "risk": "中",
+        "quote": "广发集轩基金近一年涨幅8.46%；华商润丰近一年涨幅84.29%；大摩数字经济近一年涨幅81.06%；博时黄金基金近一年涨幅65.75%；近一年同类排名前30%/前20%/前10%",
+        "conclusion": "材料集中展示多只基金近一年涨幅（最高84.29%），但风险提示仅以页脚小字“过往业绩不代表未来表现，产品有风险，投资需谨慎”呈现，未与业绩数据同版醒目提示；且“近一年同类排名前×%”未列明基金评价机构名称与评价结果发布日期。",
+        "basis": [
+          {
+            "law": "《公开募集证券投资基金宣传推介材料管理暂行规定》（证监会公告〔2020〕第16号）",
+            "article": "第十五条第（五）项",
+            "text": "不得夸大或者片面宣传基金管理人、基金经理或者其管理的基金的过往业绩。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（二）项",
+            "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面。"
+          }
+        ],
+        "suggestion": "①每张业绩表格旁以同版醒目字体标注“基金过往业绩不预示其未来表现，基金投资有风险”；②排名表述补充“数据来源：××基金评价机构，评价结果发布日期：××年××月××日”；③避免仅展示涨幅最高的产品，补充同类产品完整业绩区间与波动指标（最大回撤、波动率）。"
+      },
+      {
+        "no": 7,
+        "rule": "E-03",
+        "risk": "中",
+        "quote": "长城卓悦PLUS信用卡：无限次贵宾厅、无限次道路救援、跨境返1%无上限、快捷3倍积分",
+        "conclusion": "“无限次”“无上限”属于绝对化权益承诺，实际服务通常附有次数、对象、地域、有效期或交易类型限制，表述与权益规则不一致时构成虚假、引人误解的宣传；年费标准与减免条件亦披露不完整（未说明次年及以后年度年费、积分兑换年费的具体规则）。",
+        "basis": [
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第九条第（三）项",
+            "text": "广告不得使用“国家级”“最高级”“最佳”等用语。"
+          },
+          {
+            "law": "《中华人民共和国广告法》",
+            "article": "第二十八条",
+            "text": "广告以虚假或者引人误解的内容欺骗、误导消费者的，构成虚假广告。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十六条",
+            "text": "经营者在经营活动中使用格式条款的，应当以显著方式提请消费者注意与消费者有重大利害关系的内容。"
+          }
+        ],
+        "suggestion": "改为量化表述：“每年可享××次贵宾厅服务、××次道路救援（详见《权益手册》，有效期至××年××月××日）”“跨境消费返现1%，单月返现上限××元，排除交易类型：××”；并列表披露年费标准、减免条件与续年年费规则。"
+      },
+      {
+        "no": 8,
+        "rule": "B-03",
+        "risk": "中",
+        "quote": "汽车分期：年分期利率最高不超3%，部分车型可享低息/零息；消费贷款：年化利率3.0%起，额度最高180万，期限最长7年；15分钟预审，2小时同贷，1小时放款",
+        "conclusion": "①“最高不超3%”“3.0%起”“零息”等优惠值未披露适用客户、车型、期限、是否收取手续费及实际年化成本，属于隐瞒限制条件；②消费贷款“期限最长7年”与消费用途贷款期限不得超过5年的监管要求存在冲突，材料未区分消费用途与生产经营用途；③“15分钟预审、2小时同贷、1小时放款”时效承诺缺乏限定说明。",
+        "basis": [
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（二）项",
+            "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+          },
+          {
+            "law": "《个人贷款管理办法》（国家金融监督管理总局令2024年第3号）",
+            "article": "第八条",
+            "text": "用于个人消费的贷款期限不得超过五年；用于生产经营的贷款期限一般不超过五年……最长不超过十年。"
+          }
+        ],
+        "suggestion": "①以加粗/加框方式补充：利率适用车型清单与活动期限、零息方案是否收取手续费、实际年化综合成本（IRR）、额度与期限上限；②将“期限最长7年”明确限定为生产经营用途并说明适用条件，消费用途表述改为“最长不超过5年”；③时效表述改为“最快15分钟预审（以资料完整、审批通过为前提）”并加注“以最终审批结果为准”。"
+      }
+    ]
+  },
+  {
+    "material": "材料4",
+    "name": "材料4-综合宣传折页文案--贷款",
+    "type": "宣传折页文案（Word）",
+    "line": "贷款",
+    "ocr_note": "",
+    "summary": "折页以“单人最高150万、年化利率低至2.80%起”“券后2.78%起、数量有限先到先得”“自主支付高达100万、无需用途证明”等为主要卖点，存在隐瞒利率限制条件、用途提示缺失、制造稀缺紧迫感、弱化还款风险、风险与成本披露缺失等问题。共发现6项问题，其中高风险4项。",
+    "verdict": "不通过，须修改后重新提交审查",
+    "items": [
+      {
+        "no": 1,
+        "rule": "B-03",
+        "risk": "高",
+        "quote": "还款方式多元，年化利率低至2.80%起；券后年化利率低至2.78%起，超低优惠券数量有限，先到先得",
+        "conclusion": "折页以“低至2.80%起”“券后2.78%起”作为核心卖点，但未披露该利率的适用客户范围、贷款期限、担保方式、优惠券获取条件与有效期、利率浮动规则及未享优惠时的实际利率水平，属于隐瞒限制条件，易使消费者误认为普遍可得。",
+        "basis": [
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面，不得作虚假或者引人误解的宣传。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十六条",
+            "text": "经营者在经营活动中使用格式条款的，应当以显著方式提请消费者注意与消费者有重大利害关系的内容。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（二）项",
+            "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+          }
+        ],
+        "suggestion": "以加粗、加框、字号不小于正文的方式补充：优惠适用客户与期限、优惠券发放规则与有效期、活动起止日期、未享优惠时的利率区间（如2.80%—××%）、利率计算方式（单利/IRR）及综合融资成本示例。"
+      },
+      {
+        "no": 2,
+        "rule": "B-04",
+        "risk": "高",
+        "quote": "超低优惠券数量有限，先到先得",
+        "conclusion": "“数量有限、先到先得”通过稀缺性与时间压力促成交易，属于不当营销诱导，易促使消费者在未充分评估还款能力的情况下仓促签约。",
+        "basis": [
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（一）项",
+            "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "不得作虚假或者引人误解的宣传。"
+          },
+          {
+            "law": "《金融产品网络营销管理办法》（中国人民银行等八部门公告〔2026〕第9号，2026年9月30日施行）",
+            "article": "关于网络营销内容的规定",
+            "text": "不得使用“低风险”“低门槛”“秒到账”“高收益”“低利率”“无成本”等诱导性用语。"
+          }
+        ],
+        "suggestion": "删除“先到先得”等施压表述，改为客观规则说明：“本期优惠券共××张，发放规则为××，有效期至××年××月××日”。"
+      },
+      {
+        "no": 3,
+        "rule": "H-03",
+        "risk": "高",
+        "quote": "自主支付高达100万元，无需用途证明；满足大额消费融资需求，用途广泛，涵盖住房装修等多个领域",
+        "conclusion": "折页以“无需用途证明”“用途广泛”作为卖点，与《个人贷款管理办法》关于贷款用途明确合法、不得发放无指定用途个人贷款及加强支付管理的要求存在冲突，且可能被消费者理解为贷款资金可任意使用（包括购房、投资等禁止领域），存在诱导违规用款的风险。",
+        "basis": [
+          {
+            "law": "《个人贷款管理办法》（国家金融监督管理总局令2024年第3号）",
+            "article": "第七条",
+            "text": "个人贷款用途应符合法律法规规定和国家有关政策，贷款人不得发放无指定用途的个人贷款；贷款人应加强贷款资金支付管理，有效防范个人贷款业务风险。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面，不得作虚假或者引人误解的宣传。"
+          }
+        ],
+        "suggestion": "删除“无需用途证明”“用途广泛”表述，改为“贷款资金仅可用于装修、购车、教育、旅游等合法消费用途，不得用于购房、证券投资、偿还其他贷款等法律法规禁止领域；贷款人有权核查用途，挪用将承担违约责任（提前收回贷款、调整利率或收取罚息）”。"
+      },
+      {
+        "no": 4,
+        "rule": "A-03",
+        "risk": "高",
+        "quote": "还款压力小，每月还息一年还本；支持随时还款，无提前还款手续费",
+        "conclusion": "“还款压力小”属于弱化风险的诱导性用语；按月付息、到期一次性还本的方式在到期时存在集中偿付压力，材料未作任何提示，反而以“压力小”淡化，构成引人误解的宣传；“无提前还款手续费”亦需说明适用条件与例外情形。",
+        "basis": [
+          {
+            "law": "《金融产品网络营销管理办法》（中国人民银行等八部门公告〔2026〕第9号，2026年9月30日施行）",
+            "article": "关于网络营销内容的规定",
+            "text": "不得使用“低风险”“低门槛”“秒到账”“高收益”“低利率”“无成本”等诱导性用语。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（一）项",
+            "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面。"
+          }
+        ],
+        "suggestion": "删除“还款压力小”；改为“按月付息、到期一次性归还本金，到期需一次性筹措本金××万元，请结合自身现金流安排”；并补充“提前还款免手续费（限正常还款×期后办理，具体以合同为准）”。"
+      },
+      {
+        "no": 5,
+        "rule": "G-04",
+        "risk": "高",
+        "quote": "（全篇）缺失风险提示、征信影响与逾期后果说明",
+        "conclusion": "折页全文未出现任何“贷款有成本、量力而行”“逾期将影响个人征信”“未按约定用途使用的违约责任”等风险与责任提示，仅展示额度、利率与便利，风险揭示严重不足，损害金融消费者知情权。",
+        "basis": [
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者向消费者提供有关商品或者服务的信息，应当真实、全面，不得作虚假或者引人误解的宣传。"
+          },
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（一）项",
+            "text": "不得作虚假、欺诈、隐瞒或者引人误解的宣传。"
+          },
+          {
+            "law": "《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）",
+            "article": "第二条第（五）项",
+            "text": "不得损害金融消费者知情权。"
+          }
+        ],
+        "suggestion": "在折页显著位置（标题下方或每款产品介绍后）补充：“贷款有成本，请根据自身还款能力合理借贷；逾期将产生罚息并影响个人征信记录；授信额度与利率以最终审批结果为准”，字号不小于正文、与背景形成明显对比。"
+      },
+      {
+        "no": 6,
+        "rule": "B-05",
+        "risk": "低",
+        "quote": "文中标注上标1、2，但仅见注释1“授信额度、利率以最终审批为准……”",
+        "conclusion": "折页对利率数据标注了两处引用符号，但仅提供了注释1的内容，注释2缺失，属于资料引用标注不完整，影响信息可核查性。",
+        "basis": [
+          {
+            "law": "《中国人民银行金融消费者权益保护实施办法》（中国人民银行令〔2020〕第5号）",
+            "article": "第二十三条第（二）项",
+            "text": "不得引用不真实、不准确的数据和资料或者隐瞒限制条件等，对过往业绩或者产品收益进行夸大表述。"
+          },
+          {
+            "law": "《中华人民共和国消费者权益保护法》",
+            "article": "第二十条",
+            "text": "经营者提供信息应当真实、全面。"
+          }
+        ],
+        "suggestion": "补齐注释2（优惠券利率测算口径与有效期限），并统一上下标编号与脚注顺序。"
+      }
+    ]
+  }
+];
+const SAMPLES = [
+  {
+    "material": "材料1",
+    "short": "材料1 理财海报",
+    "name": "材料1-五谷丰登理财产品宣传海报",
+    "type": "海报（图片，OCR）",
+    "line": "理财",
+    "text": "五谷丰登理财产品宣传海报（OCR识别文本）\n\n【主视觉】最好 最优 最佳\n进阶权益优选  资产有保障  产品类型：固定收益类\n100%有收益\n\n【产品要素表】\n升级前，新增资金达标送好礼\n封闭期：约1年    开放期：每月18日-24日    业绩比较基准：3.0X%    风险等级：2级\n每月定期分红\n\n【历史业绩】\n聚合赢A十三月定开1号（成立时间2023.2.15）    成立以来年化收益率 5.10%（截至5月24日）\n昕泽稳健同享3号（最短持有360天）    成立以来年化收益率 5.89%（截至5月24日）\n\n【投资经理】\n邱勃然，CFA、CIA、CMA、CPA（中国、美国），美国理学硕士，9年相关工作经验，擅长大类资产配置及信用债研究，\n先后于四大会计师事务所担任审计助理经理、大型股份制银行及理财子担任信评研究员、投资经理，历史管理规模超3000亿。\n\n【底部小字】理财产品过往业绩、业绩比较基准不代表其未来表现，不等于理财产品实际收益，投资须谨慎。\n理财非存款，产品有风险，投资需谨慎。"
+  },
+  {
+    "material": "材料2",
+    "short": "材料2 提前还款话术",
+    "name": "材料2-提前还款客群营销话术",
+    "type": "营销话术（Word）",
+    "line": "理财",
+    "text": "提前还款客群营销话术\n\n[礼貌询问]您好，请问您是xx女士/先生吧?\n[自我介绍]我是您在__银行_支行的专属客户经理_。我们的营业地址在____，您来过我们这，还有印象吧?\n[外呼原因]因为您是我行的优质客户，所以专门打电话通知您，注意到您近期申请了提前还款，目前贷款利率整体还是比较低的。我行现开展客户回馈活动，资产提升享好礼，升级收益，享多重权益。您的还款资金可以通过参加活动享受更好的收益，不一定需要提前还款。我们网点有很多适合您的产品，可以帮您实现财富增值。您看什么时侯方便过来，咱们详细聊聊?\n[客户接受]您在其他银行还有资金吗?也可以多转过来一些，资产提升越多，可享权益越多。您看(约具体时间)\n[客户犹豫]最近利率经常调整，越是好产品，额度越有限。建议您抓紧时间，早做早踏实。最近几天，您什么时候方便过来呢?\n[客户不便到店]您有我们银行的手机银行吗?我把操作步骤发给您!这个手机号就是您的微信吧?我已经加您了，随时联系!祝您生活愉快!\n[活动权益]我们手机银行生活板块里可以看到保本优选和理财优选，里面对目前比较好的产品进行了推荐，您还可以参加“恭送好礼”专区多项权益活动，在这个板块都可以了解参加哦，资产提升最高可获得XX元权益。\n【微信添加】您手机号是微信号吧？我申请加您了，您通过下，以后您银行方面的问题都可以微信给我说，不用专门跑来网点。XX时候来网点，也可以微信给我说一下，我帮您提前取个号，避免您排队。今天就聊到这里，以后微信常联系。（等待客户挂断电话）"
+  },
+  {
+    "material": "材料3",
+    "short": "材料3 财富管理手册",
+    "name": "材料3-代发薪高管财富管理甄选服务",
+    "type": "服务手册（PDF）",
+    "line": "综合",
+    "text": "广东中行工资卡客户财富管理臻选服务（2026年2月9日-2月15日）\n\n资产配置的意义：投资单一市场，收益与风险难以平衡，通过多元灵活配置资产，既可以应对全球通胀挑战，也可通过坚持长期持有，减少择时依赖，更有助于把握长期回报，静待时间的馈赠。\n\n【保守型配置建议】\n现金管理类（5-10%）：闲钱宝，快速赎回，每人每日40万元，7*24小时资金实时到账。同业对比：工行和建行同类产品最高快赎10万元；农行无同类产品。\n固定收益类（90-95%）：跨境存款 中银香港“南向通”，人民币定期存款3个月2%，保本保息，提前锁定利率。\n（活力湾区）幸福添利增益封闭式14号（代码1XFTLZY0014A），2月6日-2月12日销售，4个月业绩基准2.10%-2.30%。同业对比：建行4个月1.86%-1.91%；农行4个月1.70%-2.05%；工行4个月1.70%-1.90%。\n保险保障类：中银三星中银稳盈（2025）两全保险，3年交清，可选满6/8/10/15年到期一次性给付，满期金折算年化收益率约1.7%/1.8%/1.9%/2.0%，有效应对利率下行；身故赔付不低于所交保费的120%-160%。中行独家、行业头部产品。\n\n【稳健型配置建议】\n现金管理类（5-10%）：闲钱宝。\n固定收益类（60-80%）：跨境存款 中银香港“南向通”，人民币定期存款3个月2%，保本保息。\n广发集轩基金（代码017475），近一年涨幅8.46%，主投债券，权益仓位约15%。近一年同类排名前30%。\n中银理财最短持有期福固收增强368天（代码CYQWFZQXY368DA），成立以来收益4%，持有30日正收益概率100%，净值稳健，少量权益增厚。同业对比：建行同类3.12%，工行同类3.27%。\n权益类（10-25%）：华商润丰灵活配置混合基金（代码003598），近一年涨幅84.29%，主投算力、AI应用、出海等。近一年同类排名前10%。\n另类及其他（5%）：诚奇慧盈量化中性7号（代码ZH04PY），2025年收益11.99%，购买起点金额40.2万，量化对冲策略，风控严格，回撤相对较小。仅限合格投资者购买。四大行仅中行代销。\n保险保障类：中银稳得鑫两全保险（分红型），一次性交清，满5/6/8年到期，年化收益率约2.6%/2.7%/2.8%；合同明确每年现金价值，满期金（保底部分）折算年化收益约1.3%/1.4%/1.5%；身故赔付不低于所交保费的120%-160%。中行独家、行业头部产品。\n\n【进取型配置建议】\n现金管理类（5-10%）：闲钱宝。\n固定收益类（20-45%）：跨境存款 中银香港“南向通”，人民币定期存款3个月2%，保本保息，提前锁定利率。\n景顺长城景颐嘉利基金（代码008999），近一年涨幅10.6%，权益仓位约20%。近一年同类排名前20%。\n权益类（40-60%）：大摩数字经济基金（代码017102），近一年涨幅81.06%，AI主题。近一年同类排名前10%。\n鸣石慧盈中证1000指数增强1期（代码ZH053A），2025年收益68.61%，购买起点金额100.5万，聚焦高成长高弹性股票。仅限合格投资者购买。四大行仅中行代销。\n另类及其他（10%）：博时黄金基金（代码002610），近一年涨幅65.75%，挂钩实物金价AU9999，申购费1折优惠。\n保险保障类：平安安盈年金保险（分红型），可选一次性交清或分3/5年交清，年金给付（每年给付所交保费的1.75%）与每年现金价值均在保险合同中列明，另有现金分红添惊喜；达标保单可对接平安集团高端医疗、居家养老等权益。行业头部产品。\n\n【融资类产品】\n汽车分期：年分期利率最高不超3%，部分车型可享低息/零息。品牌覆盖鸿蒙智行、理想、极氪、特斯拉、小米、小鹏、保时捷等。分期额度最高200万，期限最长5年；15分钟预审，2小时同贷，1小时放款。\n消费贷款：年化利率3.0%起，通过多产品组合，额度最高180万，期限最长7年，贷款金额50万以内且期限3年内可每月还息、到期还本；满足家装、购车、教育、旅游等消费需求。\n\n【高端信用卡】\n长城卓悦PLUS信用卡：主、附卡3600元/年/卡，2026年享折扣价1200元/年/卡（即日起至2026年3月31日办卡并激活，在我行月日均金融资产达到等值人民币50万元（含）以上的客户，可免首年年费，也可使用20万信用卡积分兑换当年已出年费）。\n卡片权益：无限次贵宾厅、无限次道路救援、跨境返1%无上限、快捷3倍积分等，附属卡享主卡同等权益。\n\n备注：过往业绩不代表未来表现，产品有风险，投资需谨慎。"
+  },
+  {
+    "material": "材料4",
+    "short": "材料4 贷款折页",
+    "name": "材料4-综合宣传折页文案--贷款",
+    "type": "宣传折页（Word）",
+    "line": "贷款",
+    "text": "“银”财启运，乙巳迎福 - 适度消费\n\n银业贷\n√ 线下个人大额消费贷金融服务，简单基础资料即可申请，满足大额消费融资需求，用途广泛，涵盖住房装修等多个领域\n√ 单人最高贷150万元，夫妻双方共贷最高300万元；自主支付高达100万元，无需用途证明；授信长达5年，担保方式多样\n√ 还款方式多元，年化利率低至2.80%起\n\n银闪贷\n√ 手机操作便捷，无需赴网点、无纸质材料，审批时效快\n√ 金额最高30万，授信最长36个月，纯信用免担保\n√ 放款快，灵活支取；备用资金，不放款不计息\n√ 还款压力小，每月还息一年还本；支持随时还款，无提前还款手续费\n√ 券后年化利率低至2.78%起，超低优惠券数量有限，先到先得\n\n1 授信额度、利率以最终审批为准，产品详情及业务办理详询各网点或客户经理"
+  }
+];
+
+const STEPS = ["触发智能审查","材料上传与解析","规则引擎初筛","大模型深度审查","人工查看·采纳/修改","出具意见·完结"];
+let stage = 1, items = [], cfg = null, curSample = null;
+
+/* ---------- 流程条 ---------- */
+function drawFlow(){
+  document.getElementById('flow').innerHTML = STEPS.map((s,i)=>{
+    const k=i+1, cls = k===stage?'active':(k<stage?'done':'');
+    return `<div class="step ${cls}"><span class="n">${k}</span>${s}</div>` + (k<STEPS.length?'<span class="arrow">›</span>':'');
+  }).join('');
+}
+function setStage(n){ stage=n; drawFlow(); }
+
+/* ---------- 规则引擎 ---------- */
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function ctx(text, idx, len){
+  const a=Math.max(0,idx-28), b=Math.min(text.length, idx+len+28);
+  return (a>0?'…':'') + text.slice(a,b) + (b<text.length?'…':'');
+}
+function detect(rule, text){
+  const out=[];
+  if(rule.type==='match'){
+    const re=new RegExp(rule.detect,'g'); let m;
+    while((m=re.exec(text))!==null){ out.push({m:m[0], idx:m.index}); if(out.length>6) break; }
+  }else{
+    const t=new RegExp(rule.trigger,'g'); let hit=null;
+    while((hit=t.exec(text))!==null){
+      const req=new RegExp(rule.required);
+      if(!req.test(text)) out.push({m:hit[0], idx:hit.index});
+      if(out.length>3) break;
+    }
+  }
+  return out;
+}
+function runRuleEngine(text, line){
+  const res=[];
+  RULES.rules.forEach(r=>{
+    const hits=detect(r,text); if(!hits.length) return;
+    hits.forEach(h=>{
+      res.push({
+        id:'F'+Math.random().toString(36).slice(2,8), rule:r.id, ruleName:r.name, cat:r.cat,
+        risk:r.level, quote:ctx(text,h.idx,h.m.length), match:h.m,
+        conclusion:r.conclusion.replace('{m}', h.m),
+        basis:r.basis, suggestion:r.suggestion, source:'规则引擎', state:'pending'
+      });
+    });
+  });
+  const order={'高':0,'中':1,'低':2};
+  res.sort((a,b)=>order[a.risk]-order[b.risk]);
+  return res;
+}
+
+/* ---------- 渲染 ---------- */
+function render(){
+  const box=document.getElementById('result');
+  if(!items.length){ box.className='empty'; box.innerHTML='未发现命中项。可尝试切换材料或补充文本后重新生成审查意见。'; count(); return; }
+  box.className='';
+  box.innerHTML = items.map((it,i)=>`
+    <div class="card ${it.state==='edited'?'edited':''} ${it.state==='rejected'?'rejected':''}" id="c${i}">
+      <div class="hd">
+        <span class="badge b-${it.risk==='高'?'high':it.risk==='中'?'mid':'low'}">${it.risk}风险</span>
+        <span class="ruleid">${it.rule}</span>
+        <span class="rname">${esc(it.ruleName)}</span>
+        <span class="src">${esc(it.source)}</span>
+        ${it.state==='edited'?'<span class="state st-ed">已修改</span>':''}
+        ${it.state==='rejected'?'<span class="state st-no">已判定为误报</span>':''}
+        ${it.state==='accepted'?'<span class="state st-ok">已采纳</span>':''}
+        <span class="acts">
+          <button class="sm" onclick="editItem(${i})">修改</button>
+          <button class="sm" onclick="acceptItem(${i})">采纳</button>
+          <button class="sm" onclick="rejectItem(${i})">误报</button>
+          <button class="sm" onclick="delItem(${i})">删除</button>
+        </span>
+      </div>
+      <div class="bd">
+        <div class="quote">命中原文：${hl(it.quote, it.match)}</div>
+        <div class="sec"><div class="t">(a) 审查结论</div><div class="c">${esc(it.conclusion)}</div></div>
+        <div class="sec"><div class="t">(b) 法律法规依据</div>
+          <div class="basis"><ul>${it.basis.map(b=>`<li><span class="law">${esc(b.law)}</span>
+            <span class="art">${esc(b.article)}</span>：<span class="txt">${esc(b.text)}</span></li>`).join('')}</ul></div>
+        </div>
+        <div class="sec"><div class="t">(c) 改进建议</div><div class="c">${esc(it.suggestion)}</div></div>
+        ${it.comment?`<div class="tagline">审查员批注：${esc(it.comment)}</div>`:''}
+      </div>
+    </div>`).join('');
+  count();
+}
+function hl(q,m){ if(!m) return esc(q); try{
+  return esc(q).replace(new RegExp(m.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'), s=>`<mark>${s}</mark>`);
+}catch(e){ return esc(q);} }
+function count(){
+  const c=r=>items.filter(x=>x.risk===r&&x.state!=='rejected').length;
+  document.getElementById('cHigh').textContent=c('高');
+  document.getElementById('cMid').textContent=c('中');
+  document.getElementById('cLow').textContent=c('低');
+  document.getElementById('cAll').textContent=items.filter(x=>x.state!=='rejected').length;
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ---------- 人工复核 ---------- */
+function editItem(i){
+  const it=items[i];
+  const v=prompt('修改审查结论（(a)部分）', it.conclusion);
+  if(v===null) return;
+  const s=prompt('修改改进建议（(c)部分）', it.suggestion);
+  if(s===null) return;
+  const cm=prompt('审查员批注（可留空）', it.comment||'');
+  it.conclusion=v; it.suggestion=s; if(cm) it.comment=cm;
+  it.state='edited'; render(); setStage(5); toast('已保存修改，意见标记为「已修改」');
+}
+function acceptItem(i){ items[i].state='accepted'; render(); setStage(5); toast('已采纳该条审查意见'); }
+function rejectItem(i){ items[i].state='rejected'; render(); toast('已标记为误报（不计入统计）'); }
+function delItem(i){ items.splice(i,1); render(); setStage(5); }
+function finish(){
+  if(!items.length){ toast('暂无审查意见可归档'); return; }
+  setStage(6); exportMd();
+  toast('已完结归档：审查意见已导出');
+}
+
+/* ---------- 主流程 ---------- */
+async function runReview(){
+  const text=document.getElementById('text').value.trim();
+  if(!text){ toast('请先载入或输入待审材料'); setStage(1); return; }
+  setStage(2);
+  await sleep(260);
+  setStage(3);
+  items = runRuleEngine(text, document.getElementById('line').value);
+  render();
+  await sleep(200);
+  if(cfg && cfg.base && cfg.key && cfg.model){
+    setStage(4);
+    try{
+      const llm = await callLLM(text);
+      if(llm && llm.length){
+        llm.forEach(x=>items.push({
+          id:'L'+Math.random().toString(36).slice(2,8), rule:x.rule_id||'LLM',
+          ruleName:x.rule_name||'大模型语义审查', cat:(x.rule_id||'G').slice(0,1),
+          risk:['高','中','低'].includes(x.risk)?x.risk:'中',
+          quote:x.quote||'', match:x.match||'',
+          conclusion:x.conclusion||'', basis:(x.basis||[]).map(b=>({law:b.law||'',article:b.article||'',text:b.text||''})),
+          suggestion:x.suggestion||'', source:'大模型', state:'pending'
+        }));
+        render(); toast(`大模型补充 ${llm.length} 条意见`);
+      }
+    }catch(e){ toast('大模型调用失败，已使用规则引擎结果：'+e.message); }
+  }
+  setStage(5);
+  toast(`生成审查意见 ${items.length} 条，请人工复核`);
+}
+function loadPreset(){
+  const m = REVIEW.find(r=>r.material===curSample) || REVIEW[0];
+  curSample = m.material;
+  items = m.items.map(x=>({
+    id:'P'+Math.random().toString(36).slice(2,8), rule:x.rule, ruleName:ruleName(x.rule),
+    cat:(x.rule||'G').slice(0,1), risk:x.risk, quote:x.quote, match:'',
+    conclusion:x.conclusion, basis:x.basis, suggestion:x.suggestion, source:'预置审查意见', state:'pending'
+  }));
+  document.getElementById('verdict').value = m.verdict;
+  render(); setStage(5);
+  toast('已载入 '+m.name+' 的预置审查意见，可逐条修改/采纳');
+}
+function ruleName(id){ const r=RULES.rules.find(x=>x.id===id); return r?r.name:id; }
+function clearAll(){ items=[]; render(); setStage(1); }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- 大模型 ---------- */
+const SYS_DEFAULT = `你是银行金融消费者权益保护（消保）审查专家，负责审查金融营销宣传材料。
+审查依据包括但不限于：《消费者权益保护法》第二十条、第二十六条、第二十九条；《广告法》第四条、第九条、第二十五条、第二十八条；《中国人民银行金融消费者权益保护实施办法》第二十二条、第二十三条；《关于进一步规范金融营销宣传行为的通知》（银发〔2019〕316号）；《商业银行理财业务监督管理办法》第二十六条；《理财公司理财产品销售管理暂行办法》第二十五条；《公开募集证券投资基金宣传推介材料管理暂行规定》第十五条；《一年期以上人身保险产品信息披露规则》第八条；《个人贷款管理办法》第七条、第八条；《金融产品网络营销管理办法》。
+禁止内容七类：(一)虚假、欺诈、隐瞒或引人误解；(二)引用不真实不准确数据、隐瞒限制条件、夸大过往业绩或收益；(三)利用监管审核备案误导；(四)明示或暗示保本、无风险、保收益；(五)"国家级""最高级""最佳"等极限用语；(六)性别、种族、宗教信仰歧视；(七)其他违反消保及营销宣传法规的内容。
+输出要求：仅输出JSON数组，每项含 quote(原文片段)、match(命中词)、rule_id(规则编号如E-01)、risk(高/中/低)、conclusion(审查结论，需说明判断依据)、basis(数组，含law/article/text)、suggestion(改进建议)。不要输出任何解释性文字。`;
+async function callLLM(text){
+  const body={model:cfg.model, temperature:0.2,
+    messages:[{role:'system',content:cfg.prompt||SYS_DEFAULT},
+      {role:'user',content:'请审查以下营销宣传材料，输出JSON数组：\n\n'+text.slice(0,12000)}]};
+  const r=await fetch(cfg.base.replace(/\/$/,'')+'/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j=await r.json();
+  let txt=j.choices?.[0]?.message?.content||'';
+  txt=txt.replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+  const s=txt.indexOf('['), e=txt.lastIndexOf(']');
+  return JSON.parse(txt.slice(s,e+1));
+}
+function openCfg(){
+  document.getElementById('sysPrompt').value = (cfg&&cfg.prompt)||SYS_DEFAULT;
+  document.getElementById('cfg').showModal();
+}
+function closeCfg(){ document.getElementById('cfg').close(); }
+function saveCfg(){
+  cfg={base:document.getElementById('apiBase').value.trim(),
+       key:document.getElementById('apiKey').value.trim(),
+       model:document.getElementById('apiModel').value.trim(),
+       prompt:document.getElementById('sysPrompt').value.trim()};
+  localStorage.setItem('cbr_cfg', JSON.stringify(cfg));
+  document.getElementById('llmState').textContent = (cfg.base&&cfg.model)?('大模型：'+cfg.model):'大模型：未配置（本地规则引擎）';
+  closeCfg(); toast('配置已保存到本地浏览器');
+}
+function clearCfg(){ cfg=null; localStorage.removeItem('cbr_cfg');
+  document.getElementById('llmState').textContent='大模型：未配置（本地规则引擎）'; closeCfg(); toast('已清除模型配置'); }
+
+/* ---------- 文件解析 ---------- */
+const drop=document.getElementById('drop');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.style.borderColor='#2f74d0';});
+drop.addEventListener('dragleave',e=>{drop.style.borderColor='';});
+drop.addEventListener('drop',e=>{e.preventDefault();drop.style.borderColor='';if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+document.getElementById('file').addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+
+async function handleFile(f){
+  const name=f.name, ext=name.split('.').pop().toLowerCase();
+  setStage(2);
+  setMeta(name, ext.toUpperCase()+' 文件', '解析中…');
+  try{
+    let text='';
+    if(ext==='txt'||ext==='md'){ text=await f.text(); }
+    else if(ext==='docx'){ text=await readDocx(f); }
+    else if(ext==='pdf'){ text=await readPdf(f); }
+    else if(['png','jpg','jpeg'].includes(ext)){ text=await readImage(f); }
+    else{ throw new Error('暂不支持的格式：'+ext); }
+    document.getElementById('text').value=text;
+    setMeta(name, ext.toUpperCase()+' 文件', text.length+' 字');
+    document.getElementById('mPreview').textContent=text.slice(0,1500);
+    setStage(3); toast('解析完成：'+text.length+' 字');
+    runReview();
+  }catch(e){ setMeta(name, ext.toUpperCase()+' 文件', '解析失败'); toast('解析失败：'+e.message);
+    document.getElementById('mPreview').textContent='解析失败：'+e.message+'。可将文本直接粘贴到左侧输入框。'; }
+}
+function setMeta(n,t,l){ document.getElementById('mName').textContent=n;
+  document.getElementById('mType').textContent=t; document.getElementById('mLen').textContent=l; }
+async function loadScript(src){ return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+async function readDocx(f){
+  if(!window.mammoth) await loadScript('https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js');
+  const r=await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()}); return r.value;
+}
+async function readPdf(f){
+  if(!window.pdfjsLib){
+    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+  let out=[];
+  for(let i=1;i<=Math.min(pdf.numPages,20);i++){
+    const p=await pdf.getPage(i), c=await p.getTextContent();
+    out.push(c.items.map(x=>x.str).join(' '));
+  }
+  const t=out.join('\n').trim();
+  if(t.length<20) throw new Error('该PDF疑似为扫描件（无文字层），请改用图片上传走OCR');
+  return t;
+}
+async function readImage(f){
+  if(!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js');
+  toast('正在加载OCR模型…');
+  const {data:{text}}=await Tesseract.recognize(f,'chi_sim+eng',{logger:m=>{if(m.status)toast('OCR：'+m.status);}});
+  return text;
+}
+
+/* ---------- 导出 ---------- */
+function exportMd(){
+  if(!items.length){ toast('暂无审查意见可导出'); return; }
+  const name=document.getElementById('mName').textContent==='—'?'未命名材料':document.getElementById('mName').textContent;
+  let md=`# 金融营销宣传材料消保审查意见\n\n`;
+  md+=`- 材料名称：${name}\n- 业务条线：${document.getElementById('line').value||'自动识别'}\n`;
+  md+=`- 审查时间：${new Date().toLocaleString('zh-CN')}\n- 审查方式：智能审查（规则引擎${cfg&&cfg.base?'+大模型':''}）→ 人工复核\n`;
+  md+=`- 问题合计：${items.filter(x=>x.state!=='rejected').length} 项（高${items.filter(x=>x.risk==='高'&&x.state!=='rejected').length} / 中${items.filter(x=>x.risk==='中'&&x.state!=='rejected').length} / 低${items.filter(x=>x.risk==='低'&&x.state!=='rejected').length}）\n`;
+  md+=`- 审查结论：${document.getElementById('verdict').value}\n\n---\n\n`;
+  items.filter(x=>x.state!=='rejected').forEach((it,i)=>{
+    md+=`## ${i+1}. 【${it.risk}风险】${it.ruleName}（规则 ${it.rule}）\n\n`;
+    if(it.quote) md+=`**命中原文**：${it.quote}\n\n`;
+    md+=`**(a) 审查结论**：${it.conclusion}\n\n**(b) 法律法规依据**：\n`;
+    (it.basis||[]).forEach(b=>{ md+=`- 《${b.law}》${b.article}：${b.text}\n`; });
+    md+=`\n**(c) 改进建议**：${it.suggestion}\n\n`;
+    if(it.comment) md+=`> 审查员批注：${it.comment}\n\n`;
+  });
+  md+=`---\n\n**审查员签署**：____________   **复核**：____________   **日期**：____________\n`;
+  const blob=new Blob([md],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`消保审查意见_${name}_${new Date().toISOString().slice(0,10)}.md`; a.click();
+  toast('已导出 Markdown 审查报告');
+}
+
+/* ---------- 初始化 ---------- */
+function init(){
+  document.getElementById('ruleCount').textContent=`规则库 ${RULES.rules.length} 条`;
+  const cats={}; RULES.rules.forEach(r=>{ (cats[r.cat]=cats[r.cat]||[]).push(r); });
+  document.getElementById('ruleList').innerHTML = RULES.categories.map(c=>{
+    const rs=cats[c.id]||[]; if(!rs.length) return '';
+    return `<div style="margin-bottom:10px"><div style="font-size:12.5px;font-weight:700;color:var(--brand)">
+      ${c.id} · ${c.name} <span style="font-weight:400;color:var(--sub)">(${c.src}，${rs.length}条)</span></div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.9">${
+        rs.map(r=>`<div>· <code>${r.id}</code> ${esc(r.name)} <span style="color:#9aa5b5">[${r.level}]</span></div>`).join('')}</div></div>`;
+  }).join('');
+  document.getElementById('samples').innerHTML = SAMPLES.map((s,i)=>
+    `<span class="chip" onclick="loadSample(${i})">${s.short}</span>`).join('');
+  try{ const c=JSON.parse(localStorage.getItem('cbr_cfg')||'null'); if(c){cfg=c;
+    document.getElementById('llmState').textContent=c.model?('大模型：'+c.model):'大模型：未配置（本地规则引擎）';} }catch(e){}
+  drawFlow();
+}
+function loadSample(i){
+  const s=SAMPLES[i]; curSample=s.material;
+  document.getElementById('text').value=s.text;
+  document.getElementById('line').value=s.line||'';
+  setMeta(s.name, s.type, s.text.length+' 字');
+  document.getElementById('mPreview').textContent=s.text.slice(0,1500);
+  setStage(2); toast('已载入示例材料，可点击「生成审查意见」或「载入预置审查意见」');
+}
+init();
+</script>
+</body>
+</html>
